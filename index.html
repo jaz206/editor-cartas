@@ -313,6 +313,18 @@ function plate3(img,x,y,W,capL,midX,capR){
   if(W-capL-capR>0) ctx.drawImage(img,midX,0,3,h,x+capL,y,W-capL-capR,h);
   ctx.drawImage(img,img.width-capR,0,capR,h,x+W-capR,y,capR,h);
 }
+const PG={plate_front_zombie:{t:4,b0:94.37,m:0.02595},plate_front_hero:{t:4,b0:94.72,m:0.02582},
+          plate_back_zombie:{t:7,b0:79.57,m:0.02543},plate_back_hero:{t:7,b0:80.65,m:0.02569}};
+/* name plate resized column by column: keeps the flat top and the straight sloped bottom of the PSD plate */
+function plateCols(key,x,y,W,capR){
+  const img=IMG[key], g=PG[key]; if(!img) return; const pw=img.width, h=img.height;
+  W=Math.round(W); capR=Math.min(capR,W-20); const cut=W-capR, srcCut=pw-capR;
+  for(let ox=0;ox<W;ox++){
+    const sx=ox<cut?(cut<=srcCut?ox:ox*srcCut/cut):srcCut+(ox-cut);
+    const f=(g.b0+g.m*ox-g.t)/(g.b0+g.m*sx-g.t);
+    ctx.drawImage(img,Math.floor(sx),0,1,h,x+ox,y+g.t-g.t*f,1.02,h*f);
+  }
+}
 function up(s){return (s||'').toUpperCase();}
 function healthSkullLeft(N){return N<=5?668+(5-N)*HSTEP:668-(N-5)*HSTEP;}
 
@@ -426,7 +438,7 @@ function drawFrontName(m){
   font(n.font,size); let w=tw(text,track)+n.obl*size*0.7;
   const inset=n.x-89; let W=inset+w+118;
   while(89+W>maxRight&&size>28){size-=1.5;track=n.track*size/1000;font(n.font,size);w=tw(text,track)+n.obl*size*0.7;W=inset+w+118;}
-  W=Math.max(W,230); plate3(p,89,84,W,58,240,150);
+  W=Math.max(W,230); plateCols('plate_front_'+m,89,84,W,150);
   ctx.fillStyle='#fff'; ctx.textAlign='left'; drawText(text,n.x,n.y,track,'left',n.obl);
 }
 function drawSkills(){
@@ -466,7 +478,7 @@ function drawBack(){
   const n=NAMEB[m], p=IMG['plate_back_'+m], text=up(S.name).trim()||' ';
   let size=n.size, track=n.track*size/1000; font(n.font,size); let w=tw(text,track)+n.obl*size*0.7;
   while(w+150>1100&&size>24){size-=1.5;track=n.track*size/1000;font(n.font,size);w=tw(text,track)+n.obl*size*0.7;}
-  const W=Math.max(240,w+150); plate3(p,128,760,W,40,200,100);
+  const W=Math.max(240,w+150); plateCols('plate_back_'+m,128,760,W,100);
   ctx.fillStyle='#fff'; ctx.textAlign='left'; drawText(text,128+W*0.477,n.y,track,'center',n.obl);
 }
 function draw(){
