@@ -1,0 +1,12 @@
+Editor de Dashboards - version web (replica de la plantilla Dashboard v3 de LukeS7)
+
+ACTUALIZAR TU REPO jaz206/editor-cartas
+1. Borra los archivos antiguos del repo (index.html y los .png sueltos).
+2. Sube el contenido de este zip tal cual: index.html y la carpeta assets/.
+3. Vercel vuelve a desplegar solo al hacer commit.
+
+LOGO POR DEFECTO (opcional)
+Si guardas tu logo como  assets/logo_default.png  (PNG transparente),
+el editor lo pone automaticamente en el reverso al abrirse.
+
+Uso personal y no comercial. Credito de la plantilla: LukeS7 (BoardGameGeek).
