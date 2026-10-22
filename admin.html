@@ -582,13 +582,14 @@ function openRetouch(orig,current){
     /* lasso/brush on the picture itself */
     function apply(drawMask){
       snap(); const m=maskOf(drawMask), mg=m.getContext('2d');
-      wg.save(); wg.globalCompositeOperation='destination-out'; wg.drawImage(m,0,0); wg.restore();      /* clear the area */
-      if(mode==='keep'){ mg.globalCompositeOperation='source-in'; mg.drawImage(src,0,0);                     /* put the original back */
+      if(mode==='erase'){ wg.save(); wg.globalCompositeOperation='destination-out'; wg.drawImage(m,0,0); wg.restore(); }
+      else { mg.globalCompositeOperation='source-in'; mg.drawImage(src,0,0);                     /* the original, masked */
         if(Q('.rt-nowhite input').checked){ const id=mg.getImageData(0,0,W,H), d=id.data;                     /* …without its white background */
           for(let i=0;i<d.length;i+=4){ if(!d[i+3]) continue; const mn=Math.min(d[i],d[i+1],d[i+2]), mx=Math.max(d[i],d[i+1],d[i+2]);
             if(mn>=236&&mx-mn<=22) d[i+3]=0; else if(mn>=200&&mx-mn<=22) d[i+3]=Math.round(d[i+3]*(236-mn)/36); }
           mg.putImageData(id,0,0); }
-        wg.drawImage(m,0,0); }
+        /* "Dejar" only adds: the original goes underneath what is already there, so edges and lines are never thinned */
+        wg.save(); wg.globalCompositeOperation='destination-over'; wg.drawImage(m,0,0); wg.restore(); }
       paint();
     }
     /* lasso/brush on the selection: "Quitar" adds to it, "Dejar" takes out of it */
