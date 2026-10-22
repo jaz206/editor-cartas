@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Área privada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Owner-only area: review what's missing in the character database, fix it, upload images and the default logo. */
+:root{
+  --bg:#eef0f1; --panel:#ffffff; --ink:#1b1f23; --muted:#5d6770; --line:#dce1e5;
+  --field:#f6f7f8; --accent:#2f6d7a; --accent-ink:#ffffff; --zombie:#5f7f45; --hero:#3d7f8f;
+  --warn:#b4541f; --warn-bg:#fbeee6; --ok:#3f7f45; --ok-bg:#e8f3e8;
+  --shadow:0 1px 2px rgba(20,28,34,.06),0 6px 20px rgba(20,28,34,.06);
+  --ui:"Barlow","Segoe UI",system-ui,sans-serif; --cond:"Barlow Condensed","Arial Narrow",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111418; --panel:#1a1f25; --ink:#eef1f4; --muted:#9aa5b0; --line:#2a313a;
+  --field:#13181e; --accent:#55aebf; --accent-ink:#071419; --zombie:#8db06e; --hero:#6fb3c4;
+  --warn:#f0a070; --warn-bg:#3a2519; --ok:#8fcf8f; --ok-bg:#1d2e1f;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111418; --panel:#1a1f25; --ink:#eef1f4; --muted:#9aa5b0; --line:#2a313a;
+  --field:#13181e; --accent:#55aebf; --accent-ink:#071419; --zombie:#8db06e; --hero:#6fb3c4;
+  --warn:#f0a070; --warn-bg:#3a2519; --ok:#8fcf8f; --ok-bg:#1d2e1f;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);line-height:1.4}
+.wrap{max-width:1180px;margin:0 auto;padding-block:18px 90px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.top h1{margin:0;font-family:var(--cond);font-weight:700;font-size:1.65rem;letter-spacing:.02em;text-transform:uppercase}
+.top .sp{flex:1}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
+h2{margin:0 0 10px;font:700 .82rem var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 12px;font:600 .85rem var(--ui);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--warn)}
+.btn:disabled{opacity:.5;cursor:default}
+input[type=text],input[type=password],input[type=search],select,textarea{width:100%;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:8px;padding:8px 10px;font:500 .92rem var(--ui)}
+textarea{min-height:76px;resize:vertical}
+label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.hint{color:var(--muted);font-size:.84rem;margin:6px 0 0}
+.login{max-width:380px;margin:12vh auto 0;display:grid;gap:12px}
+.err{color:var(--warn);font-size:.88rem;min-height:1.2em}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.stat{padding:12px 14px}
+.stat b{display:block;font:700 1.6rem var(--cond)}
+.stat span{color:var(--muted);font-size:.85rem}
+.grid2{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start;margin-bottom:14px}
+.logo-box{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.logo-prev{width:180px;height:100px;border-radius:8px;border:1px dashed var(--line);display:grid;place-items:center;background:repeating-conic-gradient(var(--field) 0 25%,var(--panel) 0 50%) 0 0/16px 16px;color:var(--muted);font-size:.8rem;overflow:hidden}
+.logo-prev img{max-width:100%;max-height:100%}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toolbar input[type=search]{flex:1 1 200px;width:auto}
+.toolbar select{width:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--panel);color:var(--muted);padding:8px 12px;font:600 .85rem var(--ui);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+.list{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.row:hover{border-color:var(--accent)}
+.row.sel{outline:2px solid var(--accent)}
+.thumb{width:56px;height:56px;border-radius:8px;background:var(--field);object-fit:contain;display:grid;place-items:center;color:var(--muted);font-size:.7rem;overflow:hidden}
+.row .nm{font-weight:600}
+.row .st{color:var(--muted);font-size:.8rem}
+.chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.chip{font:600 .72rem var(--ui);padding:2px 7px;border-radius:999px;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.pend{background:var(--field);color:var(--accent);border:1px solid var(--accent)}
+.edit{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+.edit h3{margin:0 0 4px;font:700 1.3rem var(--cond);text-transform:uppercase}
+.fs{border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0;display:grid;gap:8px}
+.fs legend{font:700 .75rem var(--ui);letter-spacing:.06em;text-transform:uppercase;padding:0 4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.imgbox{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.imgbox .big{width:140px;height:140px;border-radius:10px;background:repeating-conic-gradient(var(--field) 0 25%,var(--panel) 0 50%) 0 0/16px 16px;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);font-size:.8rem;overflow:hidden}
+.imgbox .big img{max-width:100%;max-height:100%}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.check{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.publish{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);padding:10px max(16px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px))}
+.publish .in{max-width:1180px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.publish .msg{flex:1;font-size:.9rem;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:14px;align-items:start}
+@media (max-width:900px){.layout,.grid2{grid-template-columns:1fr}.edit{position:static;max-height:none}}
+@media (max-width:520px){.two,.four{grid-template-columns:1fr 1fr}.row{grid-template-columns:44px 1fr}.row .chips{grid-column:1/-1;justify-content:flex-start}.thumb{width:44px;height:44px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Área privada</h1>
+    <span class="sp"></span>
+    <a class="btn" href="./" target="_blank" rel="noopener">Abrir el editor</a>
+    <button class="btn" id="logout" type="button" hidden>Salir</button>
+  </div>
+
+  <form class="panel login" id="login" autocomplete="on" onsubmit="return false">
+    <h2>Entrar</h2>
+    <label class="f">Contraseña<input type="password" id="pass" autocomplete="current-password" required></label>
+    <button class="btn primary" type="submit" id="loginBtn">Entrar</button>
+    <div class="err" id="loginErr" role="alert"></div>
+    <p class="hint">La contraseña es la que pusiste en Vercel como <b>ADMIN_PASSWORD</b>.</p>
+  </form>
+
+  <main id="app" hidden>
+    <div class="stats" id="stats"></div>
+
+    <div class="grid2">
+      <section class="panel">
+        <h2>Logo por defecto</h2>
+        <div class="logo-box">
+          <div class="logo-prev" id="logoPrev">Sin logo</div>
+          <div>
+            <label class="btn" for="logoIn">Cambiar logo<input type="file" id="logoIn" accept="image/*" hidden></label>
+            <p class="hint">Sale en el reverso de todas las cartas nuevas. PNG transparente.</p>
+          </div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Cómo funciona</h2>
+        <p class="hint" style="margin:0">Los cambios se acumulan aquí hasta que pulsas <b>Publicar cambios</b>. Entonces se guardan en GitHub y Vercel actualiza la web en 1–2 minutos. Usa <b>Ver en el editor</b> para probar un personaje antes de publicarlo.</p>
+      </section>
+    </div>
+
+    <div class="layout">
+      <section class="panel">
+        <h2>Personajes</h2>
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="Lista">
+            <button type="button" data-src="hero" aria-pressed="true">Héroes</button>
+            <button type="button" data-src="zombie" aria-pressed="false">Zombis</button>
+          </div>
+          <input type="search" id="q" placeholder="Buscar por nombre o expansión">
+          <select id="filter" aria-label="Filtro">
+            <option value="all">Todos</option>
+            <option value="img">Falta imagen</option>
+            <option value="txt">Faltan datos o habilidades</option>
+            <option value="es">Falta traducción</option>
+            <option value="todo">Sin marcar como terminado</option>
+            <option value="pend">Con cambios sin publicar</option>
+          </select>
+          <button class="btn" type="button" id="newPj">Nuevo personaje</button>
+        </div>
+        <div class="hint" id="count" style="margin:0 0 8px"></div>
+        <div class="list" id="list"></div>
+      </section>
+
+      <section class="panel edit" id="edit">
+        <p class="hint" id="editEmpty" style="margin:0">Elige un personaje de la lista para revisarlo o completarlo.</p>
+        <form id="ef" hidden autocomplete="off" onsubmit="return false">
+          <h3 id="eTitle"></h3>
+          <div class="chips" id="eChips" style="justify-content:flex-start"></div>
+
+          <fieldset class="fs"><legend>Imagen</legend>
+            <div class="imgbox">
+              <div class="big" id="eImg">Sin imagen</div>
+              <div style="display:grid;gap:8px;flex:1;min-width:180px">
+                <label class="btn" for="eImgIn">Subir imagen<input type="file" id="eImgIn" accept="image/*" hidden></label>
+                <button class="btn danger" type="button" id="eImgDel">Quitar imagen subida</button>
+                <label class="f">ID de Google Drive<input type="text" data-f="img" placeholder="Opcional"></label>
+              </div>
+            </div>
+            <p class="hint">Si hay imagen subida se usa esa; si no, la de Drive. Mejor PNG con fondo transparente.</p>
+          </fieldset>
+
+          <fieldset class="fs"><legend>Datos</legend>
+            <div class="two">
+              <label class="f">Nombre<input type="text" data-f="n" required></label>
+              <label class="f">Expansión<input type="text" data-f="set" list="sets"></label>
+            </div>
+            <label class="f hero-only">Vida<input type="text" data-f="hp" inputmode="numeric"></label>
+            <label class="check"><input type="checkbox" data-f="gen"> Terminado (sale como “hecho ✓” en el editor)</label>
+          </fieldset>
+
+          <fieldset class="fs"><legend>Ataque</legend>
+            <div class="two">
+              <label class="f">Nombre (EN)<input type="text" data-f="atk"></label>
+              <label class="f">Nombre (ES)<input type="text" data-f="atk_es"></label>
+            </div>
+            <div class="four">
+              <label class="f">Tipo<select data-f="type"><option value="melee">Cuerpo a cuerpo</option><option value="ranged">A distancia</option></select></label>
+              <label class="f">Alcance<input type="text" data-f="r"></label>
+              <label class="f">Dados<input type="text" data-f="d"></label>
+              <label class="f">Impacto<input type="text" data-f="hit"></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="fs"><legend>Azul</legend>
+            <div class="two"><label class="f">Título (EN)<input type="text" data-f="bt"></label><label class="f">Título (ES)<input type="text" data-f="bt_es"></label></div>
+            <label class="f">Texto (EN)<textarea data-f="bd"></textarea></label>
+            <label class="f">Texto (ES)<textarea data-f="bd_es"></textarea></label>
+          </fieldset>
+          <fieldset class="fs"><legend>Amarilla</legend>
+            <div class="two"><label class="f">Banda (EN)<input type="text" data-f="yt" placeholder="+1 ACTION"></label><label class="f">Banda (ES)<input type="text" data-f="yt_es" placeholder="+1 ACCIÓN"></label></div>
+          </fieldset>
+          <fieldset class="fs"><legend>Naranja</legend>
+            <div class="two"><label class="f">Título (EN)<input type="text" data-f="ot"></label><label class="f">Título (ES)<input type="text" data-f="ot_es"></label></div>
+            <label class="f">Texto (EN)<textarea data-f="od"></textarea></label>
+            <label class="f">Texto (ES)<textarea data-f="od_es"></textarea></label>
+          </fieldset>
+          <fieldset class="fs"><legend>Roja</legend>
+            <div class="two"><label class="f">Título (EN)<input type="text" data-f="rt"></label><label class="f">Título (ES)<input type="text" data-f="rt_es"></label></div>
+            <label class="f">Texto (EN)<textarea data-f="rd"></textarea></label>
+            <label class="f">Texto (ES)<textarea data-f="rd_es"></textarea></label>
+          </fieldset>
+          <p class="hint">Escribe * para el símbolo de Poder. Los cambios se guardan aquí al momento; se publican con el botón de abajo.</p>
+          <div class="actions">
+            <button class="btn" type="button" id="ePreview">Ver en el editor</button>
+            <button class="btn" type="button" id="eRevert">Deshacer cambios de este personaje</button>
+            <button class="btn danger" type="button" id="eDel">Eliminar personaje</button>
+          </div>
+        </form>
+      </section>
+    </div>
+    <datalist id="sets"></datalist>
+  </main>
+</div>
+
+<div class="publish" id="pub" hidden>
+  <div class="in">
+    <span class="msg" id="pubMsg" role="status"></span>
+    <button class="btn" type="button" id="discard">Descartar todo</button>
+    <button class="btn primary" type="button" id="publishBtn">Publicar cambios</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const API='api/admin';
+const TXT=['atk','bt','bd','ot','od','rt','rd'];            /* fields that need a Spanish version too */
+const REQ=['atk','type','r','d','hit','bt','bd','ot','od','rt','rd'];
+const LABEL={atk:'ataque',type:'tipo',r:'alcance',d:'dados',hit:'impacto',bt:'título azul',bd:'texto azul',ot:'título naranja',od:'texto naranja',rt:'título roja',rd:'texto roja',hp:'vida'};
+let KEY='', ORIG=null, DB=null, SRC='hero', SEL=null, LOGO=false;
+const IMGS=new Map();      /* path -> {data (base64), url (preview)} pending upload */
+const REMOVE=new Set();    /* uploaded image paths to delete */
+let newLogo=null;          /* {data,url} */
+
+/* ---------- api ---------- */
+async function api(method,body){
+  const r=await fetch(API,{method,headers:{'x-admin-key':KEY,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
+  let j={}; try{ j=await r.json(); }catch(e){}
+  if(!r.ok){ const e=new Error(j.error||(r.status===404?'No se encuentra /api/admin: esta página solo funciona en tu web de Vercel.':'Error '+r.status)); e.status=r.status; throw e; }
+  return j;
+}
+async function login(){
+  $('loginErr').textContent=''; $('loginBtn').disabled=true;
+  try{ const d=await api('GET'); try{ sessionStorage.setItem('mz-admin',KEY); }catch(e){}
+    ORIG=d.personajes; DB=clone(ORIG); LOGO=d.logo; restoreDraft(); $('login').hidden=true; $('app').hidden=false; $('logout').hidden=false; render(); }
+  catch(e){ $('loginErr').textContent=e.message; try{ sessionStorage.removeItem('mz-admin'); }catch(_){} }
+  finally{ $('loginBtn').disabled=false; }
+}
+$('login').addEventListener('submit',()=>{ KEY=$('pass').value; if(KEY) login(); });
+$('logout').addEventListener('click',()=>{ try{ sessionStorage.removeItem('mz-admin'); }catch(e){} location.reload(); });
+
+/* ---------- helpers ---------- */
+const clone=o=>JSON.parse(JSON.stringify(o));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const slug=s=>(s||'pj').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,50)||'pj';
+function issues(c,src){
+  const o={img:!c.file&&!c.img, txt:[], es:[]};
+  for(const f of REQ) if(!String(c[f]??'').trim()) o.txt.push(f);
+  if(src==='hero'&&!String(c.hp??'').trim()) o.txt.push('hp');
+  for(const f of TXT) if(String(c[f]??'').trim()&&!String(c[f+'_es']??'').trim()) o.es.push(f);
+  return o;
+}
+function changedEntry(src,i){ const a=DB[src][i]; const b=a&&a._orig!=null?ORIG[src][a._orig]:null;
+  if(!b) return true; const x=clone(a); delete x._orig; return JSON.stringify(x)!==JSON.stringify(b); }
+/* every entry remembers its index in the published list, so edits/new/deleted can be told apart */
+function tagOrig(){ for(const s of ['hero','zombie']) DB[s].forEach((c,i)=>{ if(c._orig===undefined) c._orig=i; }); }
+function pendingCount(){ let n=0; for(const s of ['hero','zombie']){ DB[s].forEach((c,i)=>{ if(changedEntry(s,i)) n++; });
+    n+=ORIG[s].length-DB[s].filter(c=>c._orig!=null).length; }
+  return n+(newLogo?1:0); }
+function imgUrl(c,small){ if(c.file) return IMGS.has(c.file)?IMGS.get(c.file).url:c.file+'?v='+(c.fv||'');
+  if(c.img) return small?`https://drive.google.com/thumbnail?sz=w200&id=${encodeURIComponent(c.img)}`:`api/img?id=${encodeURIComponent(c.img)}`; return null; }
+
+/* ---------- drafts survive a reload (until published) ---------- */
+function saveDraft(){ try{ localStorage.setItem('mz-admin-draft',JSON.stringify({db:DB,imgs:[...IMGS].map(([p,v])=>[p,{data:v.data}]),remove:[...REMOVE],logo:newLogo&&{data:newLogo.data}})); }catch(e){ /* too big for storage: keep in memory only */ } }
+function restoreDraft(){ tagOrig();
+  try{ const d=JSON.parse(localStorage.getItem('mz-admin-draft')||'null'); if(!d) return;
+    DB=d.db; tagOrig(); for(const [p,v] of d.imgs||[]) IMGS.set(p,{data:v.data,url:dataUrl(p,v.data)});
+    (d.remove||[]).forEach(p=>REMOVE.add(p)); if(d.logo) newLogo={data:d.logo.data,url:'data:image/png;base64,'+d.logo.data}; }catch(e){} }
+function dataUrl(p,b64){ const ext=p.split('.').pop(); return `data:image/${ext==='jpg'?'jpeg':ext};base64,${b64}`; }
+
+/* ---------- rendering ---------- */
+function render(){ renderStats(); renderLogo(); renderList(); renderEdit(); renderPub(); }
+function renderStats(){
+  const st=s=>{ let img=0,txt=0,es=0,done=0; DB[s].forEach(c=>{ const o=issues(c,s); if(o.img)img++; if(o.txt.length)txt++; if(o.es.length)es++; if(c.gen)done++; }); return {n:DB[s].length,img,txt,es,done}; };
+  const h=st('hero'), z=st('zombie');
+  $('stats').innerHTML=[
+    [h.n+' / '+z.n,'héroes / zombis'],[h.img+' / '+z.img,'sin imagen (héroes / zombis)'],
+    [(h.txt+z.txt)+'',(h.txt+z.txt)===1?'con datos o habilidades por completar':'con datos o habilidades por completar'],
+    [(h.es+z.es)+'','sin traducir al español'],[(h.done+z.done)+'','marcados como terminados']
+  ].map(([b,s])=>`<div class="panel stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
+  const sets=[...new Set([...DB.hero,...DB.zombie].map(c=>c.set).filter(Boolean))].sort();
+  $('sets').innerHTML=sets.map(s=>`<option value="${esc(s)}">`).join('');
+}
+function renderLogo(){ const url=newLogo?newLogo.url:(LOGO?'assets/logo_default.png?'+Date.now():null);
+  $('logoPrev').innerHTML=url?`<img alt="Logo por defecto" src="${url}">`:'Sin logo'; }
+function rowChips(c,i){ const o=issues(c,SRC), out=[];
+  if(changedEntry(SRC,i)) out.push('<span class="chip pend">sin publicar</span>');
+  if(o.img) out.push('<span class="chip">sin imagen</span>');
+  if(o.txt.length) out.push(`<span class="chip" title="${esc(o.txt.map(f=>LABEL[f]).join(', '))}">faltan ${o.txt.length} dato${o.txt.length>1?'s':''}</span>`);
+  if(o.es.length) out.push('<span class="chip">sin traducir</span>');
+  if(c.gen) out.push('<span class="chip ok">terminado</span>');
+  return out.join(''); }
+function renderList(){
+  const q=$('q').value.trim().toLowerCase(), f=$('filter').value;
+  document.querySelectorAll('[data-src]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.src===SRC)));
+  const items=DB[SRC].map((c,i)=>({c,i})).filter(({c,i})=>{
+    if(q&&!(`${c.n} ${c.set||''}`.toLowerCase().includes(q))) return false;
+    const o=issues(c,SRC);
+    return f==='all'||(f==='img'&&o.img)||(f==='txt'&&o.txt.length)||(f==='es'&&o.es.length)||(f==='todo'&&!c.gen)||(f==='pend'&&changedEntry(SRC,i));
+  }).sort((a,b)=>a.c.n.localeCompare(b.c.n));
+  $('count').textContent=`${items.length} de ${DB[SRC].length}`;
+  $('list').innerHTML=items.map(({c,i})=>{ const u=imgUrl(c,true);
+    return `<button type="button" class="row${SEL&&SEL.src===SRC&&SEL.i===i?' sel':''}" data-i="${i}">
+      ${u?`<img class="thumb" loading="lazy" alt="" src="${esc(u)}">`:'<span class="thumb">—</span>'}
+      <span><span class="nm">${esc(c.n)}</span><br><span class="st">${esc(c.set||'Sin expansión')}${SRC==='hero'&&c.hp?' · vida '+esc(c.hp):''}</span></span>
+      <span class="chips">${rowChips(c,i)}</span></button>`; }).join('')||'<p class="hint">Nada que mostrar con este filtro.</p>';
+}
+$('list').addEventListener('click',e=>{ const r=e.target.closest('.row'); if(!r) return; SEL={src:SRC,i:+r.dataset.i}; renderList(); renderEdit();
+  if(matchMedia('(max-width:900px)').matches) $('edit').scrollIntoView({behavior:'smooth'}); });
+document.querySelectorAll('[data-src]').forEach(b=>b.addEventListener('click',()=>{ SRC=b.dataset.src; renderList(); }));
+$('q').addEventListener('input',renderList); $('filter').addEventListener('change',renderList);
+
+function cur(){ return SEL?DB[SEL.src][SEL.i]:null; }
+function renderEdit(){
+  const c=cur(); $('ef').hidden=!c; $('editEmpty').hidden=!!c; if(!c) return;
+  $('eTitle').textContent=c.n||'Nuevo personaje';
+  document.querySelectorAll('.hero-only').forEach(e=>e.hidden=SEL.src!=='hero');
+  document.querySelectorAll('#ef [data-f]').forEach(el=>{ const v=c[el.dataset.f];
+    if(el.type==='checkbox') el.checked=!!v; else el.value=v??(el.tagName==='SELECT'?'melee':''); });
+  renderEditMeta();
+}
+function renderEditMeta(){ const c=cur(); if(!c) return; const o=issues(c,SEL.src), ch=[];
+  if(o.img) ch.push('<span class="chip">sin imagen</span>');
+  if(o.txt.length) ch.push(`<span class="chip">falta: ${esc(o.txt.map(f=>LABEL[f]).join(', '))}</span>`);
+  if(o.es.length) ch.push(`<span class="chip">sin traducir: ${esc(o.es.map(f=>LABEL[f]).join(', '))}</span>`);
+  if(!ch.length) ch.push('<span class="chip ok">completo</span>');
+  $('eChips').innerHTML=ch.join('');
+  const u=imgUrl(c,false); $('eImg').innerHTML=u?`<img alt="${esc(c.n)}" src="${esc(u)}">`:'Sin imagen';
+  $('eImgDel').hidden=!c.file; $('eTitle').textContent=c.n||'Nuevo personaje';
+}
+$('ef').addEventListener('input',e=>{ const el=e.target, f=el.dataset.f, c=cur(); if(!f||!c) return;
+  if(el.type==='checkbox'){ if(el.checked) c[f]=true; else delete c[f]; }
+  else { const v=el.value; if(v.trim()==='') delete c[f]; else c[f]=v; }
+  changedAll(); renderEditMeta(); });
+function changedAll(){ saveDraft(); renderStats(); renderList(); renderPub(); }
+
+/* images: shrink in the browser so each upload stays well under Vercel's request limit */
+function readAsImage(file){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(file), im=new Image(); im.onload=()=>res(im); im.onerror=()=>rej(new Error('No se pudo leer la imagen.')); im.src=u; }); }
+async function encode(im,maxSide,type,forceType){
+  let s=Math.min(1,maxSide/Math.max(im.width,im.height));
+  for(let k=0;k<6;k++){ const c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    let url=c.toDataURL(type,0.92); if(forceType&&!url.startsWith('data:'+type)) throw new Error('Tu navegador no puede convertir la imagen.');
+    const b64=url.split(',')[1], bytes=b64.length*0.75;
+    if(bytes<=2.6*1024*1024) return {url,b64,ext:url.startsWith('data:image/webp')?'webp':'png'};
+    s*=0.8; }
+  throw new Error('La imagen es demasiado grande incluso reducida.');
+}
+$('eImgIn').addEventListener('change',async e=>{ const f=e.target.files[0], c=cur(); e.target.value=''; if(!f||!c) return;
+  try{ const im=await readAsImage(f), r=await encode(im,1600,'image/webp');
+    const path=`assets/pj/${SEL.src}-${slug(c.n)}-${Date.now().toString(36)}.${r.ext}`;
+    if(c.file&&IMGS.has(c.file)) IMGS.delete(c.file); else if(c.file) REMOVE.add(c.file);
+    IMGS.set(path,{data:r.b64,url:r.url}); c.file=path; changedAll(); renderEditMeta(); }
+  catch(err){ alert(err.message); } });
+$('eImgDel').addEventListener('click',()=>{ const c=cur(); if(!c||!c.file) return;
+  if(IMGS.has(c.file)) IMGS.delete(c.file); else REMOVE.add(c.file); delete c.file; delete c.fv; changedAll(); renderEditMeta(); });
+$('logoIn').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{ const im=await readAsImage(f), r=await encode(im,1200,'image/png',true); newLogo={data:r.b64,url:r.url}; saveDraft(); renderLogo(); renderPub(); }
+  catch(err){ alert(err.message); } });
+
+$('newPj').addEventListener('click',()=>{ const c={n:'Nuevo personaje',set:'',type:'melee',yt:'+1 ACTION',yt_es:'+1 ACCIÓN',_orig:null}; DB[SRC].push(c);
+  SEL={src:SRC,i:DB[SRC].length-1}; $('filter').value='all'; $('q').value=''; changedAll(); renderEdit();
+  const n=document.querySelector('#ef [data-f=n]'); n.focus(); n.select(); });
+$('eRevert').addEventListener('click',()=>{ const c=cur(); if(!c) return;
+  if(c._orig==null){ alert('Es un personaje nuevo: usa “Eliminar personaje” si no lo quieres.'); return; }
+  const o=clone(ORIG[SEL.src][c._orig]); o._orig=c._orig;
+  if(c.file&&IMGS.has(c.file)) IMGS.delete(c.file); if(o.file) REMOVE.delete(o.file);
+  DB[SEL.src][SEL.i]=o; changedAll(); renderEdit(); });
+$('eDel').addEventListener('click',()=>{ const c=cur(); if(!c) return;
+  if(!confirm(`¿Eliminar a ${c.n} de la base? Se aplica al publicar.`)) return;
+  if(c.file){ if(IMGS.has(c.file)) IMGS.delete(c.file); else REMOVE.add(c.file); }
+  DB[SEL.src].splice(SEL.i,1); SEL=null; changedAll(); renderEdit(); });
+$('ePreview').addEventListener('click',()=>{ const c=cur(); if(!c) return; const x=clone(c); delete x._orig;
+  if(x.file&&IMGS.has(x.file)) x.fileData=IMGS.get(x.file).url;
+  try{ localStorage.setItem('mz-admin-preview',JSON.stringify({src:SEL.src,c:x})); }catch(e){ alert('La imagen es demasiado grande para la vista previa; publica y pruébalo en la web.'); x.fileData=null; localStorage.setItem('mz-admin-preview',JSON.stringify({src:SEL.src,c:x})); }
+  window.open('./?preview=1','_blank'); });
+
+/* ---------- publish ---------- */
+function renderPub(){ const n=pendingCount(); $('pub').hidden=!n;
+  $('pubMsg').textContent=n?`${n} cambio${n>1?'s':''} sin publicar${IMGS.size?` · ${IMGS.size} imagen${IMGS.size>1?'es':''} nueva${IMGS.size>1?'s':''}`:''}${newLogo?' · logo nuevo':''}.`:''; }
+addEventListener('beforeunload',e=>{ if(DB&&pendingCount()){ e.preventDefault(); e.returnValue=''; } });
+$('discard').addEventListener('click',()=>{ if(!confirm('¿Descartar todos los cambios sin publicar?')) return;
+  DB=clone(ORIG); tagOrig(); IMGS.clear(); REMOVE.clear(); newLogo=null; SEL=null; try{ localStorage.removeItem('mz-admin-draft'); }catch(e){} render(); });
+$('publishBtn').addEventListener('click',async()=>{
+  const btn=$('publishBtn'); btn.disabled=true;
+  try{
+    const stamp=Date.now().toString(36);
+    const out={hero:[],zombie:[]}; for(const s of ['hero','zombie']) for(const c of DB[s]){ const x=clone(c); delete x._orig; delete x.fileData;
+      if(x.file&&IMGS.has(x.file)) x.fv=stamp; out[s].push(x); }
+    /* images go in batches (~3 MB per request); the database + removals go with the last one */
+    const files=[...IMGS].map(([path,v])=>({path,data:v.data})); if(newLogo) files.push({path:'assets/logo_default.png',data:newLogo.data});
+    const batches=[]; let b=[],size=0;
+    for(const f of files){ if(b.length&&size+f.data.length>3e6){ batches.push(b); b=[]; size=0; } b.push(f); size+=f.data.length; }
+    for(let i=0;i<batches.length;i++){ $('pubMsg').textContent=`Subiendo imágenes (${i+1}/${batches.length+1})…`;
+      await api('POST',{files:batches[i],message:'Imágenes desde el área privada'}); }
+    $('pubMsg').textContent='Guardando…';
+    await api('POST',{personajes:out,files:b,remove:[...REMOVE],message:`Área privada: ${pendingCount()} cambio(s)`});
+    ORIG=out; DB=clone(out); tagOrig(); IMGS.clear(); REMOVE.clear(); if(newLogo){ LOGO=true; } newLogo=null;
+    try{ localStorage.removeItem('mz-admin-draft'); }catch(e){}
+    render(); $('pub').hidden=false; $('pubMsg').textContent='Publicado. La web se actualiza en 1–2 minutos.'; setTimeout(renderPub,8000);
+  }catch(e){ $('pubMsg').textContent='No se pudo publicar: '+e.message; }
+  finally{ btn.disabled=false; }
+});
+
+/* ---------- start ---------- */
+try{ const k=sessionStorage.getItem('mz-admin'); if(k){ KEY=k; login(); } }catch(e){}
+</script>
+</body>
+</html>

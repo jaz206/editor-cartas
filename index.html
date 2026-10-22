@@ -335,7 +335,7 @@ const EN={
 'No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.':'Couldn’t read the sheet: check that it’s a .json saved from this section.',
 'frente':'front','Nombre del personaje':'Character name','Ej.: RAYOS DE HIELO':'E.g. ICE BEAMS','Título de la habilidad azul':'Blue skill title','Título de la habilidad naranja':'Orange skill title','Título de la habilidad roja':'Red skill title',
 'Texto de la habilidad azul. Usa * para el símbolo de Poder.':'Blue skill text. Use * for the Power symbol.','Texto de la habilidad naranja. Usa * para el símbolo de Poder.':'Orange skill text. Use * for the Power symbol.','Texto de la habilidad roja. Usa * para el símbolo de Poder.':'Red skill text. Use * for the Power symbol.',
-'— Elige un personaje —':'— Choose a character —','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
+'— Elige un personaje —':'— Choose a character —','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
 };
 /* default texts of a new card, per language (swapped on language change if still untouched) */
 const DEF_TEXT={
@@ -760,18 +760,21 @@ async function loadDB(){ try{ const r=await fetch('assets/personajes.json'); if(
 function fillDB(){
   const sel=$('dbChar'), src=$('dbSrc').value, keep=sel.value; sel.innerHTML='';
   if(!DBC){ sel.innerHTML='<option>'+t('No se pudo cargar la base')+'</option>'; return; }
-  const bySet={}; DBC[src].forEach((c,i)=>{(bySet[c.set]=bySet[c.set]||[]).push([c.n,i]);});
+  const bySet={}; DBC[src].forEach((c,i)=>{const k=c.set||t('Otros');(bySet[k]=bySet[k]||[]).push([c.n,i]);});
   Object.keys(bySet).sort((a,b)=>a==='Core Box'?-1:b==='Core Box'?1:a.localeCompare(b)).forEach(set=>{
     const g=document.createElement('optgroup'); g.label=set;
-    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img?t(' · con imagen'):'')+(c.gen?t(' · hecho ✓'):'');g.appendChild(o);});
+    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img||c.file?t(' · con imagen'):'')+(c.gen?t(' · hecho ✓'):'');g.appendChild(o);});
     sel.appendChild(g); });
   const ph=document.createElement('option'); ph.value=''; ph.textContent=t('— Elige un personaje —'); sel.prepend(ph);
   sel.value=keep&&sel.querySelector(`option[value="${keep}"]`)?keep:'';
 }
 function dbPick(){ const v=$('dbChar').value; if(!DBC||v===''){ $('dbHint').textContent=t('Primero elige un personaje en la lista.'); return null; } return DBC[$('dbSrc').value][+v]; }
 async function loadDriveArt(c){
-  if(!c.img){ $('dbHint').textContent=t('{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.',{n:c.n}); return false; }
+  if(!c.img&&!c.file){ $('dbHint').textContent=t('{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.',{n:c.n}); return false; }
   $('dbHint').textContent=t('Cargando la imagen de {n}…',{n:c.n});
+  if(c.file||c.fileData){ const fsrc=c.fileData||(c.file+(c.fv?'?v='+c.fv:'')), fim=await loadImg(fsrc);
+    if(fim){ art=fim; artSrc=fsrc; artId++; changed(); return true; }
+    if(!c.img){ $('dbHint').textContent=t('No se pudo cargar la imagen de {n}.',{n:c.n}); return false; } }
   const src='api/img?id='+encodeURIComponent(c.img), im=await loadImg(src);
   if(im){ art=im; artSrc=src; artId++; changed(); return true; }
   const link='https://drive.google.com/thumbnail?sz=w2400&id='+encodeURIComponent(c.img);
@@ -795,7 +798,7 @@ $('dbAll').addEventListener('click',()=>{ const c=dbPick(); if(!c) return; const
   ['name','atk','blue','yellow','orange','red'].forEach(p=>applyPart(c,p)); S.mode=src;
   if(src==='hero'&&c.hp){ const h=parseInt(c.hp,10); if(h>=1&&h<=8) S.health=h; }
   changed(); const msg=t('Cargado {n} ({m}) completo.',{n:c.n,m:t(src==='hero'?'Héroe':'Zombi')})+(c.bt?'':t(' Este zombi no trae título azul en la base: escríbelo a mano.'));
-  $('dbHint').textContent=msg; if(c.img){ loadDriveArt(c).then(ok=>{ if(ok) $('dbHint').textContent=msg+t(' Imagen cargada.'); }); } });
+  $('dbHint').textContent=msg; if(c.img||c.file){ loadDriveArt(c).then(ok=>{ if(ok) $('dbHint').textContent=msg+t(' Imagen cargada.'); }); } });
 document.querySelectorAll('.parts [data-part]').forEach(b=>b.addEventListener('click',async()=>{ const c=dbPick(); if(!c) return;
   if(b.dataset.part==='img'){ if(await loadDriveArt(c)) $('dbHint').textContent=t('Imagen de {n} cargada.',{n:c.n}); return; }
   applyPart(c,b.dataset.part); changed(); $('dbHint').textContent=t('Copiado de {n} → {p}.',{n:c.n,p:t(PART_LABEL[b.dataset.part])}); }));
@@ -934,6 +937,9 @@ $('themeBtn').addEventListener('click',()=>{const r=document.documentElement,c=r
   syncUI(); draw(); placeTrim();
   await loadCards();
   $('dbSrc').value=S.mode; await loadDB();
+  /* "Ver en el editor" from the private area: show that character (not saved anywhere) */
+  if(/[?&]preview=1/.test(location.search)&&DBC){ try{ const pv=JSON.parse(localStorage.getItem('mz-admin-preview')||'null');
+    if(pv&&pv.c&&DBC[pv.src]){ DBC[pv.src].push(pv.c); $('dbSrc').value=pv.src; fillDB(); $('dbChar').value=String(DBC[pv.src].length-1); $('dbAll').click(); } }catch(e){} }
   window.__ready=true;
 })();
 window.__S=S; window.__missing=MISSING; window.__setLang=setLang; window.__setArt=async src=>{artSrc=src;art=await loadImg(src);artId++;draw();};

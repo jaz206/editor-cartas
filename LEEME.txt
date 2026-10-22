@@ -15,3 +15,14 @@ IMAGENES DESDE GOOGLE DRIVE
 La carpeta api/ contiene img.js: Vercel la publica como /api/img y sirve las
 imagenes de Drive desde tu propio dominio para poder exportarlas e imprimirlas.
 Cada archivo de Drive debe estar compartido como "cualquier persona con el enlace".
+
+AREA PRIVADA (admin.html)
+Pagina solo para el dueño: tu-web.vercel.app/admin.html
+Permite ver que falta (imagenes, habilidades, traducciones), corregir textos EN/ES,
+subir imagenes de personajes, añadir/eliminar personajes y cambiar el logo por defecto.
+Al pulsar "Publicar cambios" se hace un commit en este repositorio y Vercel redespliega.
+Necesita dos variables de entorno en Vercel (Settings > Environment Variables):
+  ADMIN_PASSWORD  la contraseña que quieras
+  GITHUB_TOKEN    token "fine-grained" de GitHub, solo para jaz206/editor-cartas,
+                  con permiso Contents: Read and write
+Despues de añadirlas, haz "Redeploy" en Vercel.
