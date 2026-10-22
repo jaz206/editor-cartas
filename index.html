@@ -52,6 +52,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--ui);line-height:1.4
 .sec{display:flex;flex-direction:column;gap:9px;border:0;margin:0;padding:0;min-width:0}
 .sec>h2{margin:0;font:700 .8rem var(--cond);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:4px}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;min-width:0}
+.parts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.parts .btn{padding:8px 4px;font-size:.82rem}
+.parts .pb{border-left:5px solid var(--c)}
+select{font:500 .92rem var(--ui);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 8px;width:100%;min-width:0}
 input[type=text],textarea{font:400 .95rem var(--ui);color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
 textarea{min-height:64px;resize:vertical;line-height:1.35}
 input:focus-visible,textarea:focus-visible,button:focus-visible,.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
@@ -146,6 +150,24 @@ details.about b{color:var(--ink)}
           <button class="btn" type="button" id="resetFit">Centrar</button>
         </div>
         <p class="hint">Arrastra sobre la carta para mover la imagen. Por defecto se coloca exactamente donde la pone la plantilla.</p>
+      </section>
+
+      <section class="sec">
+        <h2>Base de personajes</h2>
+        <div class="row">
+          <label class="f" style="flex:0 0 40%">Fuente<select id="dbSrc"><option value="hero">Héroes</option><option value="zombie">Zombis</option></select></label>
+          <label class="f">Personaje<select id="dbChar"></select></label>
+        </div>
+        <button class="btn primary" type="button" id="dbAll">Cargar todo el personaje</button>
+        <div class="parts" role="group" aria-label="Cargar solo una parte">
+          <button class="btn" type="button" data-part="name">Nombre</button>
+          <button class="btn" type="button" data-part="atk">Ataque</button>
+          <button class="btn pb" type="button" data-part="blue" style="--c:#4f97a6">Azul</button>
+          <button class="btn pb" type="button" data-part="yellow" style="--c:#d39a1f">Amarilla</button>
+          <button class="btn pb" type="button" data-part="orange" style="--c:#d2622f">Naranja</button>
+          <button class="btn pb" type="button" data-part="red" style="--c:#a8282a">Roja</button>
+        </div>
+        <p class="hint" id="dbHint">Carga todo el personaje o solo una parte: puedes elegir otro personaje y traer solo su habilidad roja, azul…</p>
       </section>
 
       <section class="sec front-only">
@@ -297,7 +319,7 @@ const FILES=['front_bg_zombie','front_bg_hero','frame_zombie','frame_hero','devo
  'health_1','health_2','health_3','health_4','health_5','health_tick','icon_skull','power_symbol',
  'sym_zombie_melee','sym_zombie_ranged','sym_hero_melee','sym_hero_ranged',
  'plate_front_zombie','plate_front_hero','plate_back_zombie','plate_back_hero',
- 'back_base_zombie','back_base_hero','back_blood','copyright_mark',
+ 'back_base_zombie','back_base_hero','back_blood','copyright_mark','bar_blue','bar_yellow','bar_orange','bar_red',
  'track_zombie_icon','track_hero_icon','track_zombie_tick','track_hero_tick'];
 for(const m of ['zombie','hero']) for(let j=0;j<5;j++) FILES.push(`track_${m}_row${j}`);
 function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src;});}
@@ -485,14 +507,31 @@ function drawFrontName(m){
   W=Math.max(W,230); plateCols('plate_front_'+m,89,84,W,150);
   ctx.fillStyle='#fff'; ctx.textAlign='left'; drawText(text,n.x,n.y,track,'left',n.obl);
 }
+/* Skill bars move with the text, as on the printed cards: keep the template positions when the text fits,
+   otherwise slide the red bar down, then the yellow/orange pair, and only then reduce the type size. */
+const SKILL_BOTTOM=880, SKILL_GAP=11;
+function skillLayout(size){
+  const lead=DESC.lead*size/DESC.size, fo=0.744*(DESC.size-size);
+  const n=k=>S[k+'D']?layoutDesc(S[k+'D'],size,DESC.w).lines.length:0;
+  const nb=n('blue'), no=n('orange'), nr=n('red');
+  const last=(first,lines)=>lines?first+(lines-1)*lead:first-lead+10;
+  const place=(minY,minR)=>{ const b=195, bf=b+88-fo, bl=last(bf,nb);
+    const y=Math.max(minY,bl+SKILL_GAP), o=y+37, of=o+92.3-fo, ol=last(of,no);
+    const r=Math.max(minR,ol+SKILL_GAP), rf=r+86.3-fo, rl=last(rf,nr);
+    return {size,lead,b,bf,y,o,of,r,rf,rl}; };
+  for(const [a,c] of [[406,657],[406,0],[0,0]]){ const L=place(a,c); if(L.rl<=SKILL_BOTTOM) return L; }
+  return place(0,0);
+}
 function drawSkills(){
-  ctx.textAlign='left';
-  for(const k of ['blue','yellow','orange','red']){
-    const sk=SK[k], t=up(S[k+'T']);
-    if(t){ let size=31.25; font('TabletTitle',size); while(tw(t)>440&&size>18){size-=0.5;font('TabletTitle',size);}
-      ctx.fillStyle='#fff'; drawText(t,sk.tx,sk.ty,0,'left'); }
-    if(sk.box!==undefined){ const d=S[k+'D']; if(d) drawDescBlock(d,DESC.x,sk.box+DESC.first,DESC.w,sk.limit,'left',25); }
-  }
+  let size=DESC.size, L;
+  for(;;){ L=skillLayout(size); if(L.rl<=SKILL_BOTTOM||size<=22) break; size-=0.5; }
+  const title=(t,x,y)=>{ t=up(t); if(!t) return; let s=31.25; font('TabletTitle',s); while(tw(t)>398&&s>18){s-=0.5;font('TabletTitle',s);}
+    ctx.fillStyle='#fff'; ctx.textAlign='left'; drawText(t,x,y,0,'left'); };
+  const desc=(d,first)=>{ if(d) drawDescBlock(d,DESC.x,first,DESC.w,1e9,'left',0,{size:L.size,lead:L.lead}); };
+  desc(S.blueD,L.bf); if(IMG.bar_blue) ctx.drawImage(IMG.bar_blue,922,L.b); title(S.blueT,938.4,L.b+36.2);
+  if(up(S.yellowT)){ if(IMG.bar_yellow) ctx.drawImage(IMG.bar_yellow,922,L.y); title(S.yellowT,938.3,L.y+35.1); }
+  desc(S.orangeD,L.of); if(IMG.bar_orange) ctx.drawImage(IMG.bar_orange,922,L.o); title(S.orangeT,936.9,L.o+50.1);
+  desc(S.redD,L.rf); if(IMG.bar_red) ctx.drawImage(IMG.bar_red,922,L.r); title(S.redT,937.4,L.r+35.3);
 }
 function placeholder(box){
   ctx.save(); ctx.fillStyle='rgba(20,30,30,.35)'; ctx.font='600 30px "Barlow Condensed",sans-serif'; ctx.textAlign='center';
@@ -620,6 +659,36 @@ $('loadJson').addEventListener('change',async e=>{
     changed(); $('status').textContent='Personaje cargado.'; }
   catch(err){ $('status').textContent='No se pudo leer el archivo: comprueba que sea un .json guardado con este editor.'; }
 });
+
+/* ---------- character database (from Heroes_jugables / zombies_jugables) ---------- */
+let DBC=null;
+async function loadDB(){ try{ const r=await fetch('assets/personajes.json'); if(!r.ok) throw 0; DBC=await r.json(); }catch(e){ DBC=null; } fillDB(); }
+function fillDB(){
+  const sel=$('dbChar'), src=$('dbSrc').value; sel.innerHTML='';
+  if(!DBC){ sel.innerHTML='<option>No se pudo cargar la base</option>'; return; }
+  const bySet={}; DBC[src].forEach((c,i)=>{(bySet[c.set]=bySet[c.set]||[]).push([c.n,i]);});
+  Object.keys(bySet).sort((a,b)=>a==='Core Box'?-1:b==='Core Box'?1:a.localeCompare(b)).forEach(set=>{
+    const g=document.createElement('optgroup'); g.label=set;
+    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const o=document.createElement('option');o.value=i;o.textContent=n;g.appendChild(o);});
+    sel.appendChild(g); });
+}
+function dbPick(){ return DBC?DBC[$('dbSrc').value][+$('dbChar').value]:null; }
+const PART_LABEL={name:'nombre',atk:'ataque',blue:'habilidad azul',yellow:'banda amarilla',orange:'habilidad naranja',red:'habilidad roja'};
+function applyPart(c,part){
+  if(part==='name') S.name=c.n;
+  if(part==='atk'){ S.atkTitle=c.atk; S.atype=c.type==='ranged'?'ranged':'melee'; S.range=c.r; S.dice=c.d; S.hit=c.hit; }
+  if(part==='blue'){ S.blueT=c.bt; S.blueD=c.bd; }
+  if(part==='yellow'){ S.yellowT=c.yt||'+1 ACTION'; }
+  if(part==='orange'){ S.orangeT=c.ot; S.orangeD=c.od; }
+  if(part==='red'){ S.redT=c.rt; S.redD=c.rd; }
+}
+$('dbSrc').addEventListener('change',fillDB);
+$('dbAll').addEventListener('click',()=>{ const c=dbPick(); if(!c) return; const src=$('dbSrc').value;
+  ['name','atk','blue','yellow','orange','red'].forEach(p=>applyPart(c,p)); S.mode=src;
+  if(src==='hero'&&c.hp){ const h=parseInt(c.hp,10); if(h>=1&&h<=8) S.health=h; }
+  changed(); $('dbHint').textContent=`Cargado ${c.n} (${src==='hero'?'Héroe':'Zombi'}) completo.`+(c.bt?'':' Este zombi no trae título azul en la base: escríbelo a mano.'); });
+document.querySelectorAll('.parts [data-part]').forEach(b=>b.addEventListener('click',()=>{ const c=dbPick(); if(!c) return;
+  applyPart(c,b.dataset.part); changed(); $('dbHint').textContent=`Copiado de ${c.n} → ${PART_LABEL[b.dataset.part]}.`; }));
 
 /* ---------- print sheet (A4) ---------- */
 const MM=300/25.4;                          /* template is 300 ppi: 1299×827 px = 110×70 mm */
@@ -752,6 +821,7 @@ $('themeBtn').addEventListener('click',()=>{const r=document.documentElement,c=r
   try{ await Promise.all(['MonsterMovies','DevilDog','TabletTitle','TabletNum','TabletBody','TabletAtk'].map(f=>document.fonts.load(`40px "${f}"`))); }catch(e){}
   syncUI(); draw(); placeTrim();
   await loadCards();
+  $('dbSrc').value=S.mode; await loadDB();
   window.__ready=true;
 })();
 window.__S=S; window.__setArt=async src=>{artSrc=src;art=await loadImg(src);artId++;draw();};
