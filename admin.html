@@ -80,6 +80,12 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
 .revit .cmp{display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
 .revit .cmp b{color:var(--muted);font-weight:600}
 .revit .row2{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.mode{display:inline-block;vertical-align:middle;font:700 .68rem var(--ui);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:6px;color:#fff}
+.mode.hero{background:#2f6f7f}
+.mode.zombie{background:#4f6f37}
+.edit h3 .mode{font-size:.75rem;vertical-align:4px}
+.row.hero{border-left:4px solid var(--hero)}
+.row.zombie{border-left:4px solid var(--zombie)}
 .chip.ok{background:var(--ok-bg);color:var(--ok)}
 .chip.pend{background:var(--field);color:var(--accent);border:1px solid var(--accent)}
 .edit{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
@@ -143,6 +149,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
         <h2>Personajes</h2>
         <div class="toolbar">
           <div class="seg" role="group" aria-label="Lista">
+            <button type="button" data-src="all" aria-pressed="false">Todos</button>
             <button type="button" data-src="hero" aria-pressed="true">Héroes</button>
             <button type="button" data-src="zombie" aria-pressed="false">Zombis</button>
           </div>
@@ -318,8 +325,9 @@ function renderStats(){
 }
 function renderLogo(){ const url=newLogo?newLogo.url:(LOGO?'assets/logo_default.png?'+Date.now():null);
   $('logoPrev').innerHTML=url?`<img alt="Logo por defecto" src="${url}">`:'Sin logo'; }
-function rowChips(c,i){ const o=issues(c,SRC), out=[];
-  if(changedEntry(SRC,i)) out.push('<span class="chip pend">sin publicar</span>');
+const MODE_TAG=s=>`<span class="mode ${s}">${s==='hero'?'Héroe':'Zombi'}</span>`;
+function rowChips(c,s,i){ const o=issues(c,s), out=[];
+  if(changedEntry(s,i)) out.push('<span class="chip pend">sin publicar</span>');
   if(c.rev&&c.rev.length) out.push(`<span class="chip rev" title="Distinto en la Zombicide Wiki">revisar (${c.rev.length})</span>`);
   if(o.img) out.push('<span class="chip">sin imagen</span>');
   if(o.txt.length) out.push(`<span class="chip" title="${esc(o.txt.map(f=>LABEL[f]).join(', '))}">faltan ${o.txt.length} dato${o.txt.length>1?'s':''}</span>`);
@@ -329,19 +337,21 @@ function rowChips(c,i){ const o=issues(c,SRC), out=[];
 function renderList(){
   const q=$('q').value.trim().toLowerCase(), f=$('filter').value;
   document.querySelectorAll('[data-src]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.src===SRC)));
-  const items=DB[SRC].map((c,i)=>({c,i})).filter(({c,i})=>{
+  const srcs=SRC==='all'?['hero','zombie']:[SRC];
+  const total=srcs.reduce((n,s)=>n+DB[s].length,0);
+  const items=srcs.flatMap(s=>DB[s].map((c,i)=>({c,i,s}))).filter(({c,i,s})=>{
     if(q&&!(`${c.n} ${c.set||''}`.toLowerCase().includes(q))) return false;
-    const o=issues(c,SRC);
-    return f==='all'||(f==='rev'&&c.rev&&c.rev.length)||(f==='wiki'&&c.url&&!c.file&&!c.img)||(f==='img'&&o.img)||(f==='txt'&&o.txt.length)||(f==='es'&&o.es.length)||(f==='todo'&&!c.gen)||(f==='pend'&&changedEntry(SRC,i));
-  }).sort((a,b)=>a.c.n.localeCompare(b.c.n));
-  $('count').textContent=`${items.length} de ${DB[SRC].length}`;
-  $('list').innerHTML=items.map(({c,i})=>{ const u=imgUrl(c,true);
-    return `<button type="button" class="row${SEL&&SEL.src===SRC&&SEL.i===i?' sel':''}" data-i="${i}">
+    const o=issues(c,s);
+    return f==='all'||(f==='rev'&&c.rev&&c.rev.length)||(f==='wiki'&&c.url&&!c.file&&!c.img)||(f==='img'&&o.img)||(f==='txt'&&o.txt.length)||(f==='es'&&o.es.length)||(f==='todo'&&!c.gen)||(f==='pend'&&changedEntry(s,i));
+  }).sort((a,b)=>a.c.n.localeCompare(b.c.n)||(a.s==='hero'?-1:1));
+  $('count').textContent=`${items.length} de ${total}`;
+  $('list').innerHTML=items.map(({c,i,s})=>{ const u=imgUrl(c,true);
+    return `<button type="button" class="row ${s}${SEL&&SEL.src===s&&SEL.i===i?' sel':''}" data-s="${s}" data-i="${i}">
       ${u?`<img class="thumb" loading="lazy" alt="" src="${esc(u)}">`:'<span class="thumb">—</span>'}
-      <span><span class="nm">${esc(c.n)}</span><br><span class="st">${esc(c.set||'Sin expansión')}${SRC==='hero'&&c.hp?' · vida '+esc(c.hp):''}</span></span>
-      <span class="chips">${rowChips(c,i)}</span></button>`; }).join('')||'<p class="hint">Nada que mostrar con este filtro.</p>';
+      <span><span class="nm">${esc(c.n)}</span> ${MODE_TAG(s)}<br><span class="st">${esc(c.set||'Sin expansión')}${s==='hero'&&c.hp?' · vida '+esc(c.hp):''}</span></span>
+      <span class="chips">${rowChips(c,s,i)}</span></button>`; }).join('')||'<p class="hint">Nada que mostrar con este filtro.</p>';
 }
-$('list').addEventListener('click',e=>{ const r=e.target.closest('.row'); if(!r) return; SEL={src:SRC,i:+r.dataset.i}; renderList(); renderEdit();
+$('list').addEventListener('click',e=>{ const r=e.target.closest('.row'); if(!r) return; SEL={src:r.dataset.s,i:+r.dataset.i}; renderList(); renderEdit();
   if(matchMedia('(max-width:900px)').matches) $('edit').scrollIntoView({behavior:'smooth'}); });
 document.querySelectorAll('[data-src]').forEach(b=>b.addEventListener('click',()=>{ SRC=b.dataset.src; renderList(); }));
 $('q').addEventListener('input',renderList); $('filter').addEventListener('change',renderList);
@@ -349,7 +359,7 @@ $('q').addEventListener('input',renderList); $('filter').addEventListener('chang
 function cur(){ return SEL?DB[SEL.src][SEL.i]:null; }
 function renderEdit(){
   const c=cur(); $('ef').hidden=!c; $('editEmpty').hidden=!!c; if(!c) return;
-  $('eTitle').textContent=c.n||'Nuevo personaje';
+  $('eTitle').innerHTML=esc(c.n||'Nuevo personaje')+' '+MODE_TAG(SEL.src);
   document.querySelectorAll('.hero-only').forEach(e=>e.hidden=SEL.src!=='hero');
   document.querySelectorAll('#ef [data-f]').forEach(el=>{ const v=c[el.dataset.f];
     if(el.type==='checkbox') el.checked=!!v; else el.value=v??(el.tagName==='SELECT'?'melee':''); });
@@ -363,7 +373,7 @@ function renderEditMeta(){ const c=cur(); if(!c) return; const o=issues(c,SEL.sr
   if(!ch.length) ch.push('<span class="chip ok">completo</span>');
   $('eChips').innerHTML=ch.join('');
   const u=imgUrl(c,false); $('eImg').innerHTML=u?`<img alt="${esc(c.n)}" src="${esc(u)}">`:'Sin imagen';
-  $('eImgDel').hidden=!c.file; $('eTitle').textContent=c.n||'Nuevo personaje';
+  $('eImgDel').hidden=!c.file; $('eTitle').innerHTML=esc(c.n||'Nuevo personaje')+' '+MODE_TAG(SEL.src);
   renderRev();
 }
 /* fields that differ from the Zombicide Wiki: compare and decide */
@@ -410,7 +420,7 @@ $('logoIn').addEventListener('change',async e=>{ const f=e.target.files[0]; e.ta
   try{ const im=await readAsImage(f), r=await encode(im,1200,'image/png',true); newLogo={data:r.b64,url:r.url}; saveDraft(); renderLogo(); renderPub(); }
   catch(err){ alert(err.message); } });
 
-$('newPj').addEventListener('click',()=>{ const c={n:'Nuevo personaje',set:'',type:'melee',yt:'+1 ACTION',yt_es:'+1 ACCIÓN',_orig:null}; DB[SRC].push(c);
+$('newPj').addEventListener('click',()=>{ if(SRC==='all'){ alert('Elige primero “Héroes” o “Zombis” para saber de qué tipo es el personaje nuevo.'); return; } const c={n:'Nuevo personaje',set:'',type:'melee',yt:'+1 ACTION',yt_es:'+1 ACCIÓN',_orig:null}; DB[SRC].push(c);
   SEL={src:SRC,i:DB[SRC].length-1}; $('filter').value='all'; $('q').value=''; changedAll(); renderEdit();
   const n=document.querySelector('#ef [data-f=n]'); n.focus(); n.select(); });
 $('eRevert').addEventListener('click',()=>{ const c=cur(); if(!c) return;
