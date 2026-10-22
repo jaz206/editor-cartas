@@ -317,7 +317,7 @@ const EN={
 'No se pudo cargar la base':'Couldn’t load the database',' · con imagen':' · with image',' · hecho ✓':' · done ✓',
 '{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.':'{n} has no image in the database: upload one with “Upload character image”.',
 'Cargando la imagen de {n}…':'Loading {n}’s image…',
-'No se pudo traer la imagen de {n} desde Drive (en la vista previa de Claude no funciona; en tu web publicada sí).':'Couldn’t fetch {n}’s image from Drive (it doesn’t work in Claude’s preview; it does on your published site).',
+'No se pudo traer la imagen de {n} (en la vista previa de Claude no funciona; en tu web publicada sí).':'Couldn’t fetch {n}’s image (it doesn’t work in Claude’s preview; it does on your published site).',
 'Ábrela aquí':'Open it here',', guárdala y súbela con “Subir imagen del personaje”.':', save it and upload it with “Upload character image”.',
 'imagen':'image','nombre':'name','ataque':'attack','habilidad azul':'blue skill','banda amarilla':'yellow banner','habilidad naranja':'orange skill','habilidad roja':'red skill',
 'Cargado {n} ({m}) completo.':'Loaded all of {n} ({m}).',' Este zombi no trae título azul en la base: escríbelo a mano.':' This zombie has no blue title in the database: type it in by hand.',
@@ -763,22 +763,25 @@ function fillDB(){
   const bySet={}; DBC[src].forEach((c,i)=>{const k=c.set||t('Otros');(bySet[k]=bySet[k]||[]).push([c.n,i]);});
   Object.keys(bySet).sort((a,b)=>a==='Core Box'?-1:b==='Core Box'?1:a.localeCompare(b)).forEach(set=>{
     const g=document.createElement('optgroup'); g.label=set;
-    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img||c.file?t(' · con imagen'):'')+(c.gen?t(' · hecho ✓'):'');g.appendChild(o);});
+    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img||c.file||c.url?t(' · con imagen'):'')+(c.gen?t(' · hecho ✓'):'');g.appendChild(o);});
     sel.appendChild(g); });
   const ph=document.createElement('option'); ph.value=''; ph.textContent=t('— Elige un personaje —'); sel.prepend(ph);
   sel.value=keep&&sel.querySelector(`option[value="${keep}"]`)?keep:'';
 }
 function dbPick(){ const v=$('dbChar').value; if(!DBC||v===''){ $('dbHint').textContent=t('Primero elige un personaje en la lista.'); return null; } return DBC[$('dbSrc').value][+v]; }
+/* character image: uploaded file > Google Drive > external URL (wiki); Drive and URLs go through api/img
+   so the canvas stays exportable */
 async function loadDriveArt(c){
-  if(!c.img&&!c.file){ $('dbHint').textContent=t('{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.',{n:c.n}); return false; }
+  if(!c.img&&!c.file&&!c.url&&!c.fileData){ $('dbHint').textContent=t('{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.',{n:c.n}); return false; }
   $('dbHint').textContent=t('Cargando la imagen de {n}…',{n:c.n});
-  if(c.file||c.fileData){ const fsrc=c.fileData||(c.file+(c.fv?'?v='+c.fv:'')), fim=await loadImg(fsrc);
-    if(fim){ art=fim; artSrc=fsrc; artId++; changed(); return true; }
-    if(!c.img){ $('dbHint').textContent=t('No se pudo cargar la imagen de {n}.',{n:c.n}); return false; } }
-  const src='api/img?id='+encodeURIComponent(c.img), im=await loadImg(src);
-  if(im){ art=im; artSrc=src; artId++; changed(); return true; }
-  const link='https://drive.google.com/thumbnail?sz=w2400&id='+encodeURIComponent(c.img);
-  $('dbHint').innerHTML=t('No se pudo traer la imagen de {n} desde Drive (en la vista previa de Claude no funciona; en tu web publicada sí).',{n:c.n})+` <a href="${link}" target="_blank" rel="noopener">${t('Ábrela aquí')}</a>`+t(', guárdala y súbela con “Subir imagen del personaje”.');
+  const tries=[];
+  if(c.fileData) tries.push(c.fileData);
+  if(c.file) tries.push(c.file+(c.fv?'?v='+c.fv:''));
+  if(c.img) tries.push('api/img?id='+encodeURIComponent(c.img));
+  if(c.url) tries.push('api/img?u='+encodeURIComponent(c.url));
+  for(const src of tries){ const im=await loadImg(src); if(im){ art=im; artSrc=src; artId++; changed(); return true; } }
+  const link=c.img?'https://drive.google.com/thumbnail?sz=w2400&id='+encodeURIComponent(c.img):c.url;
+  $('dbHint').innerHTML=t('No se pudo traer la imagen de {n} (en la vista previa de Claude no funciona; en tu web publicada sí).',{n:c.n})+(link?` <a href="${link}" target="_blank" rel="noopener">${t('Ábrela aquí')}</a>`+t(', guárdala y súbela con “Subir imagen del personaje”.'):'');
   return false;
 }
 const PART_LABEL={img:'imagen',name:'nombre',atk:'ataque',blue:'habilidad azul',yellow:'banda amarilla',orange:'habilidad naranja',red:'habilidad roja'};
@@ -798,7 +801,7 @@ $('dbAll').addEventListener('click',()=>{ const c=dbPick(); if(!c) return; const
   ['name','atk','blue','yellow','orange','red'].forEach(p=>applyPart(c,p)); S.mode=src;
   if(src==='hero'&&c.hp){ const h=parseInt(c.hp,10); if(h>=1&&h<=8) S.health=h; }
   changed(); const msg=t('Cargado {n} ({m}) completo.',{n:c.n,m:t(src==='hero'?'Héroe':'Zombi')})+(c.bt?'':t(' Este zombi no trae título azul en la base: escríbelo a mano.'));
-  $('dbHint').textContent=msg; if(c.img||c.file){ loadDriveArt(c).then(ok=>{ if(ok) $('dbHint').textContent=msg+t(' Imagen cargada.'); }); } });
+  $('dbHint').textContent=msg; if(c.img||c.file||c.url){ loadDriveArt(c).then(ok=>{ if(ok) $('dbHint').textContent=msg+t(' Imagen cargada.'); }); } });
 document.querySelectorAll('.parts [data-part]').forEach(b=>b.addEventListener('click',async()=>{ const c=dbPick(); if(!c) return;
   if(b.dataset.part==='img'){ if(await loadDriveArt(c)) $('dbHint').textContent=t('Imagen de {n} cargada.',{n:c.n}); return; }
   applyPart(c,b.dataset.part); changed(); $('dbHint').textContent=t('Copiado de {n} → {p}.',{n:c.n,p:t(PART_LABEL[b.dataset.part])}); }));

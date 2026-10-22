@@ -42,7 +42,7 @@ h2{margin:0 0 10px;font:700 .82rem var(--ui);letter-spacing:.08em;text-transform
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.danger{color:var(--warn)}
 .btn:disabled{opacity:.5;cursor:default}
-input[type=text],input[type=password],input[type=search],select,textarea{width:100%;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:8px;padding:8px 10px;font:500 .92rem var(--ui)}
+input[type=text],input[type=url],input[type=password],input[type=search],select,textarea{width:100%;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:8px;padding:8px 10px;font:500 .92rem var(--ui)}
 textarea{min-height:76px;resize:vertical}
 label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .hint{color:var(--muted);font-size:.84rem;margin:6px 0 0}
@@ -141,6 +141,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
           <select id="filter" aria-label="Filtro">
             <option value="all">Todos</option>
             <option value="img">Falta imagen</option>
+            <option value="wiki">Solo foto de la wiki</option>
             <option value="txt">Faltan datos o habilidades</option>
             <option value="es">Falta traducción</option>
             <option value="todo">Sin marcar como terminado</option>
@@ -165,9 +166,10 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
                 <label class="btn" for="eImgIn">Subir imagen<input type="file" id="eImgIn" accept="image/*" hidden></label>
                 <button class="btn danger" type="button" id="eImgDel">Quitar imagen subida</button>
                 <label class="f">ID de Google Drive<input type="text" data-f="img" placeholder="Opcional"></label>
+                <label class="f">URL de imagen (wiki)<input type="url" data-f="url" placeholder="https://static.wikia.nocookie.net/…"></label>
               </div>
             </div>
-            <p class="hint">Si hay imagen subida se usa esa; si no, la de Drive. Mejor PNG con fondo transparente.</p>
+            <p class="hint">Orden: imagen subida → Drive → URL. Las URL solo funcionan si son de la Zombicide Wiki (static.wikia.nocookie.net). Mejor PNG con fondo transparente.</p>
           </fieldset>
 
           <fieldset class="fs"><legend>Datos</legend>
@@ -265,7 +267,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slug=s=>(s||'pj').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,50)||'pj';
 function issues(c,src){
-  const o={img:!c.file&&!c.img, txt:[], es:[]};
+  const o={img:!c.file&&!c.img&&!c.url, txt:[], es:[]};
   for(const f of REQ) if(!String(c[f]??'').trim()) o.txt.push(f);
   if(src==='hero'&&!String(c.hp??'').trim()) o.txt.push('hp');
   for(const f of TXT) if(String(c[f]??'').trim()&&!String(c[f+'_es']??'').trim()) o.es.push(f);
@@ -279,7 +281,8 @@ function pendingCount(){ let n=0; for(const s of ['hero','zombie']){ DB[s].forEa
     n+=ORIG[s].length-DB[s].filter(c=>c._orig!=null).length; }
   return n+(newLogo?1:0); }
 function imgUrl(c,small){ if(c.file) return IMGS.has(c.file)?IMGS.get(c.file).url:c.file+'?v='+(c.fv||'');
-  if(c.img) return small?`https://drive.google.com/thumbnail?sz=w200&id=${encodeURIComponent(c.img)}`:`api/img?id=${encodeURIComponent(c.img)}`; return null; }
+  if(c.img) return small?`https://drive.google.com/thumbnail?sz=w200&id=${encodeURIComponent(c.img)}`:`api/img?id=${encodeURIComponent(c.img)}`;
+  if(c.url) return c.url; return null; }
 
 /* ---------- drafts survive a reload (until published) ---------- */
 function saveDraft(){ try{ localStorage.setItem('mz-admin-draft',JSON.stringify({db:DB,imgs:[...IMGS].map(([p,v])=>[p,{data:v.data}]),remove:[...REMOVE],logo:newLogo&&{data:newLogo.data}})); }catch(e){ /* too big for storage: keep in memory only */ } }
@@ -317,7 +320,7 @@ function renderList(){
   const items=DB[SRC].map((c,i)=>({c,i})).filter(({c,i})=>{
     if(q&&!(`${c.n} ${c.set||''}`.toLowerCase().includes(q))) return false;
     const o=issues(c,SRC);
-    return f==='all'||(f==='img'&&o.img)||(f==='txt'&&o.txt.length)||(f==='es'&&o.es.length)||(f==='todo'&&!c.gen)||(f==='pend'&&changedEntry(SRC,i));
+    return f==='all'||(f==='wiki'&&c.url&&!c.file&&!c.img)||(f==='img'&&o.img)||(f==='txt'&&o.txt.length)||(f==='es'&&o.es.length)||(f==='todo'&&!c.gen)||(f==='pend'&&changedEntry(SRC,i));
   }).sort((a,b)=>a.c.n.localeCompare(b.c.n));
   $('count').textContent=`${items.length} de ${DB[SRC].length}`;
   $('list').innerHTML=items.map(({c,i})=>{ const u=imgUrl(c,true);
@@ -344,6 +347,7 @@ function renderEditMeta(){ const c=cur(); if(!c) return; const o=issues(c,SEL.sr
   if(o.img) ch.push('<span class="chip">sin imagen</span>');
   if(o.txt.length) ch.push(`<span class="chip">falta: ${esc(o.txt.map(f=>LABEL[f]).join(', '))}</span>`);
   if(o.es.length) ch.push(`<span class="chip">sin traducir: ${esc(o.es.map(f=>LABEL[f]).join(', '))}</span>`);
+  if(!o.img&&!c.file&&!c.img&&c.url) ch.push('<span class="chip" title="Foto de la miniatura con fondo: sustitúyela por una imagen recortada cuando la tengas">solo foto de la wiki</span>');
   if(!ch.length) ch.push('<span class="chip ok">completo</span>');
   $('eChips').innerHTML=ch.join('');
   const u=imgUrl(c,false); $('eImg').innerHTML=u?`<img alt="${esc(c.n)}" src="${esc(u)}">`:'Sin imagen';
