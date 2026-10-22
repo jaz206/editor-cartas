@@ -87,6 +87,30 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
 .row.hero{border-left:4px solid var(--hero)}
 .row.zombie{border-left:4px solid var(--zombie)}
 .chip.ok{background:var(--ok-bg);color:var(--ok)}
+.rt-ov{position:fixed;inset:0;z-index:1000;background:rgba(8,10,12,.72);display:grid;place-items:center;padding:12px}
+.rt-box{background:var(--panel);color:var(--ink);border-radius:14px;width:min(1100px,100%);height:min(900px,100%);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.rt-bar,.rt-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.rt-foot{border-bottom:0;border-top:1px solid var(--line)}
+.rt-sp{flex:1}
+.rt-hint{flex:1 1 260px;color:var(--muted);font-size:.85rem}
+.rt-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.rt-seg button{border:0;background:var(--panel);color:var(--muted);padding:7px 11px;font:600 .85rem var(--ui,system-ui);cursor:pointer}
+.rt-seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+.rt-seg[data-g=mode] button[data-v=keep][aria-pressed=true]{background:#2f8a4c;color:#fff}
+.rt-seg[data-g=mode] button[data-v=erase][aria-pressed=true]{background:#b3392f;color:#fff}
+.rt-size{display:flex;align-items:center;gap:6px;font:600 .8rem var(--ui,system-ui);color:var(--muted)}
+.rt-size input{width:110px}
+.rt-btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;font:600 .85rem var(--ui,system-ui);cursor:pointer}
+.rt-btn.rt-pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.rt-stage{display:grid;place-items:center;overflow:hidden;padding:10px;min-height:0}
+.rt-wrap{position:relative;border-radius:6px;overflow:hidden}
+.rt-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+.rt-ov2{touch-action:none;cursor:crosshair}
+.rt-wrap.bg-check{background:repeating-conic-gradient(#d8dcdf 0 25%,#fff 0 50%) 0 0/18px 18px}
+.rt-wrap.bg-dark{background:#22262b}
+.rt-wrap.bg-green{background:#7e9a63}
+.rt-chk{display:flex;align-items:center;gap:5px;font:600 .8rem var(--ui,system-ui);color:var(--muted)}
+
 .chip.pend{background:var(--field);color:var(--accent);border:1px solid var(--accent)}
 .edit{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
 .edit h3{margin:0 0 4px;font:700 1.3rem var(--cond);text-transform:uppercase}
@@ -183,6 +207,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
               <div style="display:grid;gap:8px;flex:1;min-width:180px">
                 <label class="btn" for="eImgIn">Subir imagen<input type="file" id="eImgIn" accept="image/*" hidden></label>
                 <span class="hint" style="margin:0">Al subir, quitar:</span><label class="check"><input type="checkbox" id="eBgChk" checked> fondo blanco</label><label class="check"><input type="checkbox" id="eDotChk" checked> puntos de trama</label><label class="check"><input type="checkbox" id="eBanChk" checked> etiqueta del nombre</label>
+                <button class="btn" type="button" id="eRetouch">Retocar recorte</button>
                 <button class="btn danger" type="button" id="eImgDel">Quitar imagen subida</button>
                 <label class="f">ID de Google Drive<input type="text" data-f="img" placeholder="Opcional"></label>
                 <label class="f">URL de imagen (wiki)<input type="url" data-f="url" placeholder="https://static.wikia.nocookie.net/…"></label>
@@ -493,11 +518,92 @@ function cleanArt(src,opt){
   g.putImageData(id,0,0); c.__dot=D; return c;
 }
 $('eImgIn').addEventListener('change',async e=>{ const f=e.target.files[0], c=cur(); e.target.value=''; if(!f||!c) return;
-  try{ let im=await readAsImage(f); if($('eBgChk').checked){ const cut=cleanArt(im,{dots:$('eDotChk').checked,banner:$('eBanChk').checked}); if(cut) im=cut; } const r=await encode(im,1600,'image/webp');
-    const path=`assets/pj/${SEL.src}-${slug(c.n)}-${Date.now().toString(36)}.${r.ext}`;
-    if(c.file&&IMGS.has(c.file)) IMGS.delete(c.file); else if(c.file) REMOVE.add(c.file);
-    IMGS.set(path,{data:r.b64,url:r.url}); c.file=path; changedAll(); renderEditMeta(); }
+  try{ const im0=await readAsImage(f); let im=im0; if($('eBgChk').checked){ const cut=cleanArt(im,{dots:$('eDotChk').checked,banner:$('eBanChk').checked}); if(cut) im=cut; }
+    await setImage(c,im,im0); }
   catch(err){ alert(err.message); } });
+const ORIGS=new Map();   /* uploaded image path -> original picture (this session), used by the retouch tool */
+async function setImage(c,im,orig){
+  const r=await encode(im,1600,'image/webp');
+  const path=`assets/pj/${SEL.src}-${slug(c.n)}-${Date.now().toString(36)}.${r.ext}`;
+  if(c.file&&IMGS.has(c.file)) IMGS.delete(c.file); else if(c.file) REMOVE.add(c.file);
+  IMGS.set(path,{data:r.b64,url:r.url}); if(orig) ORIGS.set(path,orig); c.file=path; changedAll(); renderEditMeta(); }
+function loadAny(src){ return new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
+/* ---------- manual retouch of a cut-out: circle (lasso) or paint what to keep or remove ---------- */
+const RT_TXT=s=>(typeof t==='function'?t(s):s);
+function openRetouch(orig,current){
+  return new Promise(resolve=>{
+    const W=current.naturalWidth||current.width, H=current.naturalHeight||current.height;
+    const work=document.createElement('canvas'); work.width=W; work.height=H; const wg=work.getContext('2d',{willReadFrequently:true}); wg.drawImage(current,0,0,W,H);
+    const src=document.createElement('canvas'); src.width=W; src.height=H; src.getContext('2d').drawImage(orig,0,0,W,H);
+    const undo=[]; const snap=()=>{ undo.push(wg.getImageData(0,0,W,H)); if(undo.length>25) undo.shift(); };
+    let mode='keep', tool='lasso', size=Math.round(Math.max(W,H)/40), bg='check';
+    const ov=document.createElement('div'); ov.className='rt-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label',RT_TXT('Retocar recorte'));
+    ov.innerHTML=`<div class="rt-box">
+      <div class="rt-bar">
+        <div class="rt-seg" data-g="mode"><button type="button" data-v="keep" aria-pressed="true">${RT_TXT('Dejar')}</button><button type="button" data-v="erase" aria-pressed="false">${RT_TXT('Quitar')}</button></div>
+        <div class="rt-seg" data-g="tool"><button type="button" data-v="lasso" aria-pressed="true">${RT_TXT('Rodear')}</button><button type="button" data-v="brush" aria-pressed="false">${RT_TXT('Pincel')}</button></div>
+        <label class="rt-chk" title="${RT_TXT('Al dejar una zona, no recupera el blanco del fondo')}"><input type="checkbox" checked> ${RT_TXT('sin blanco')}</label>
+        <label class="rt-size">${RT_TXT('Grosor')} <input type="range" min="2" max="${Math.round(Math.max(W,H)/8)}" value="${size}"></label>
+        <div class="rt-seg" data-g="bg"><button type="button" data-v="check" aria-pressed="true">▦</button><button type="button" data-v="dark" aria-pressed="false">■</button><button type="button" data-v="green" aria-pressed="false" style="color:#6f8f55">■</button></div>
+        <span class="rt-sp"></span>
+        <button type="button" class="rt-btn" data-a="undo">${RT_TXT('Deshacer')}</button>
+        <button type="button" class="rt-btn" data-a="orig">${RT_TXT('Volver al original')}</button>
+      </div>
+      <div class="rt-stage"><div class="rt-wrap bg-check"><canvas class="rt-img"></canvas><canvas class="rt-ov2"></canvas></div></div>
+      <div class="rt-foot"><span class="rt-hint">${RT_TXT('“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.')}</span>
+        <button type="button" class="rt-btn" data-a="cancel">${RT_TXT('Cancelar')}</button><button type="button" class="rt-btn rt-pri" data-a="ok">${RT_TXT('Aplicar')}</button></div></div>`;
+    document.body.appendChild(ov);
+    const view=ov.querySelector('.rt-img'), vg=view.getContext('2d'), lay=ov.querySelector('.rt-ov2'), lg=lay.getContext('2d'), wrap=ov.querySelector('.rt-wrap');
+    view.width=lay.width=W; view.height=lay.height=H;
+    const paint=()=>{ vg.clearRect(0,0,W,H); vg.drawImage(work,0,0); };
+    paint();
+    const fit=()=>{ const st=ov.querySelector('.rt-stage'), k=Math.min(st.clientWidth/W, st.clientHeight/H, 2);
+      wrap.style.width=W*k+'px'; wrap.style.height=H*k+'px'; };
+    fit(); addEventListener('resize',fit);
+    /* apply a mask path (filled lasso or brush stroke) in the current mode */
+    function apply(drawMask){
+      snap();
+      const m=document.createElement('canvas'); m.width=W; m.height=H; const mg=m.getContext('2d'); mg.fillStyle=mg.strokeStyle='#000'; drawMask(mg);
+      wg.save(); wg.globalCompositeOperation='destination-out'; wg.drawImage(m,0,0); wg.restore();      /* clear the area */
+      if(mode==='keep'){ mg.globalCompositeOperation='source-in'; mg.drawImage(src,0,0);                     /* put the original back */
+        if(ov.querySelector('.rt-chk input').checked){ const id=mg.getImageData(0,0,W,H), d=id.data;           /* …without its white background */
+          for(let i=0;i<d.length;i+=4){ if(!d[i+3]) continue; const mn=Math.min(d[i],d[i+1],d[i+2]), mx=Math.max(d[i],d[i+1],d[i+2]);
+            if(mn>=236&&mx-mn<=22) d[i+3]=0; else if(mn>=200&&mx-mn<=22) d[i+3]=Math.round(d[i+3]*(236-mn)/36); }
+          mg.putImageData(id,0,0); }
+        wg.drawImage(m,0,0); }
+      paint();
+    }
+    let pts=null;
+    const toImg=e=>{ const r=lay.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; };
+    const drawLay=()=>{ lg.clearRect(0,0,W,H); if(!pts||pts.length<2) return;
+      lg.lineJoin=lg.lineCap='round'; const col=mode==='keep'?'rgba(40,200,90,':'rgba(230,60,50,';
+      lg.beginPath(); lg.moveTo(pts[0][0],pts[0][1]); for(const p of pts) lg.lineTo(p[0],p[1]);
+      if(tool==='lasso'){ lg.closePath(); lg.fillStyle=col+'.25)'; lg.fill(); lg.lineWidth=Math.max(2,W/350); lg.strokeStyle=col+'1)'; lg.setLineDash([W/120,W/180]); lg.stroke(); lg.setLineDash([]); }
+      else { lg.lineWidth=size; lg.strokeStyle=col+'.45)'; lg.stroke(); } };
+    lay.addEventListener('pointerdown',e=>{ e.preventDefault(); lay.setPointerCapture(e.pointerId); pts=[toImg(e)]; drawLay(); });
+    lay.addEventListener('pointermove',e=>{ if(!pts) return; const p=toImg(e), l=pts[pts.length-1]; if(Math.hypot(p[0]-l[0],p[1]-l[1])>W/400){ pts.push(p); drawLay(); } });
+    const end=()=>{ if(!pts) return; const P=pts; pts=null; lg.clearRect(0,0,W,H);
+      if(tool==='lasso'&&P.length>2) apply(g=>{ g.beginPath(); g.moveTo(P[0][0],P[0][1]); for(const p of P) g.lineTo(p[0],p[1]); g.closePath(); g.fill(); });
+      if(tool==='brush') apply(g=>{ g.lineJoin=g.lineCap='round'; g.lineWidth=size; g.beginPath(); g.moveTo(P[0][0],P[0][1]); for(const p of P) g.lineTo(p[0],p[1]); if(P.length===1) g.lineTo(P[0][0]+0.1,P[0][1]); g.stroke(); }); };
+    lay.addEventListener('pointerup',end); lay.addEventListener('pointercancel',end);
+    ov.querySelectorAll('.rt-seg').forEach(sg=>sg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+      sg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+      const v=b.dataset.v, gname=sg.dataset.g; if(gname==='mode') mode=v; if(gname==='tool') tool=v; if(gname==='bg'){ bg=v; wrap.className='rt-wrap bg-'+v; } }));
+    ov.querySelector('.rt-size input').addEventListener('input',e=>{ size=+e.target.value; });
+    const close=res=>{ removeEventListener('resize',fit); removeEventListener('keydown',key); ov.remove(); resolve(res); };
+    const key=e=>{ if(e.key==='Escape') close(null); if((e.ctrlKey||e.metaKey)&&e.key==='z'){ e.preventDefault(); ov.querySelector('[data-a=undo]').click(); } };
+    addEventListener('keydown',key);
+    ov.querySelector('.rt-foot').addEventListener('click',e=>{ const a=e.target.dataset&&e.target.dataset.a; if(a==='cancel') close(null); if(a==='ok') close(work); });
+    ov.querySelector('[data-a=undo]').addEventListener('click',()=>{ const s=undo.pop(); if(s){ wg.putImageData(s,0,0); paint(); } });
+    ov.querySelector('[data-a=orig]').addEventListener('click',()=>{ snap(); wg.clearRect(0,0,W,H); wg.drawImage(src,0,0); paint(); });
+  });
+}
+$('eRetouch').addEventListener('click',async()=>{ const c=cur(); if(!c) return;
+  const src=c.file?(IMGS.has(c.file)?IMGS.get(c.file).url:c.file+'?v='+(c.fv||'')):c.img?'api/img?id='+encodeURIComponent(c.img):c.url?'api/img?u='+encodeURIComponent(c.url):null;
+  if(!src){ alert('Este personaje no tiene imagen: súbela primero.'); return; }
+  const im=await loadAny(src); if(!im){ alert('No se pudo cargar la imagen (las de Drive y la wiki solo cargan en tu web publicada).'); return; }
+  const orig=(c.file&&ORIGS.get(c.file))||im; const out=await openRetouch(orig,im); if(!out) return;
+  try{ await setImage(c,out,orig); }catch(err){ alert(err.message); } });
 $('eImgDel').addEventListener('click',()=>{ const c=cur(); if(!c||!c.file) return;
   if(IMGS.has(c.file)) IMGS.delete(c.file); else REMOVE.add(c.file); delete c.file; delete c.fv; changedAll(); renderEditMeta(); });
 $('logoIn').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
