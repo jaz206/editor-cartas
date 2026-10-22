@@ -64,6 +64,10 @@ function checkDb(db) {
     for (const c of db[k]) {
       if (!c || typeof c !== 'object' || typeof c.n !== 'string' || !c.n.trim()) return 'Hay un personaje sin nombre.';
       for (const [f, v] of Object.entries(c)) {
+        if (f === 'rev') { // review notes: [{f, wiki, wiki_es?, note?}]
+          if (!Array.isArray(v) || v.length > 30 || !v.every(r => r && typeof r === 'object' && Object.values(r).every(x => typeof x === 'string' && x.length <= 2000))) return `Revisión no válida en ${c.n}`;
+          continue;
+        }
         if (!['string', 'boolean', 'number'].includes(typeof v)) return `Campo no válido en ${c.n}: ${f}`;
         if (typeof v === 'string' && v.length > 2000) return `Texto demasiado largo en ${c.n}: ${f}`;
       }

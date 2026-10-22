@@ -71,6 +71,15 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
 .row .st{color:var(--muted);font-size:.8rem}
 .chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
 .chip{font:600 .72rem var(--ui);padding:2px 7px;border-radius:999px;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
+.chip.rev{background:#fff2c4;color:#7a5a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip.rev{background:#3a3112;color:#f0d27a}}
+.revbox{border:1px solid #e6c55a;background:color-mix(in srgb,#ffe9a0 22%,var(--panel));border-radius:10px;padding:10px;margin:10px 0;display:grid;gap:10px}
+.revbox h4{margin:0;font:700 .8rem var(--ui);letter-spacing:.06em;text-transform:uppercase}
+.revit{display:grid;gap:4px;font-size:.88rem;border-top:1px solid var(--line);padding-top:8px}
+.revit .lbl{font-weight:600}
+.revit .cmp{display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
+.revit .cmp b{color:var(--muted);font-weight:600}
+.revit .row2{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .chip.ok{background:var(--ok-bg);color:var(--ok)}
 .chip.pend{background:var(--field);color:var(--accent);border:1px solid var(--accent)}
 .edit{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
@@ -140,6 +149,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
           <input type="search" id="q" placeholder="Buscar por nombre o expansión">
           <select id="filter" aria-label="Filtro">
             <option value="all">Todos</option>
+            <option value="rev">A revisar (distinto en la wiki)</option>
             <option value="img">Falta imagen</option>
             <option value="wiki">Solo foto de la wiki</option>
             <option value="txt">Faltan datos o habilidades</option>
@@ -158,6 +168,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
         <form id="ef" hidden autocomplete="off" onsubmit="return false">
           <h3 id="eTitle"></h3>
           <div class="chips" id="eChips" style="justify-content:flex-start"></div>
+          <div class="revbox" id="eRev" hidden></div>
 
           <fieldset class="fs"><legend>Imagen</legend>
             <div class="imgbox">
@@ -300,7 +311,7 @@ function renderStats(){
   $('stats').innerHTML=[
     [h.n+' / '+z.n,'héroes / zombis'],[h.img+' / '+z.img,'sin imagen (héroes / zombis)'],
     [(h.txt+z.txt)+'',(h.txt+z.txt)===1?'con datos o habilidades por completar':'con datos o habilidades por completar'],
-    [(h.es+z.es)+'','sin traducir al español'],[(h.done+z.done)+'','marcados como terminados']
+    [(h.es+z.es)+'','sin traducir al español'],[[...DB.hero,...DB.zombie].filter(c=>c.rev&&c.rev.length).length+'','a revisar (distintos en la wiki)'],[(h.done+z.done)+'','marcados como terminados']
   ].map(([b,s])=>`<div class="panel stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
   const sets=[...new Set([...DB.hero,...DB.zombie].map(c=>c.set).filter(Boolean))].sort();
   $('sets').innerHTML=sets.map(s=>`<option value="${esc(s)}">`).join('');
@@ -309,6 +320,7 @@ function renderLogo(){ const url=newLogo?newLogo.url:(LOGO?'assets/logo_default.
   $('logoPrev').innerHTML=url?`<img alt="Logo por defecto" src="${url}">`:'Sin logo'; }
 function rowChips(c,i){ const o=issues(c,SRC), out=[];
   if(changedEntry(SRC,i)) out.push('<span class="chip pend">sin publicar</span>');
+  if(c.rev&&c.rev.length) out.push(`<span class="chip rev" title="Distinto en la Zombicide Wiki">revisar (${c.rev.length})</span>`);
   if(o.img) out.push('<span class="chip">sin imagen</span>');
   if(o.txt.length) out.push(`<span class="chip" title="${esc(o.txt.map(f=>LABEL[f]).join(', '))}">faltan ${o.txt.length} dato${o.txt.length>1?'s':''}</span>`);
   if(o.es.length) out.push('<span class="chip">sin traducir</span>');
@@ -320,7 +332,7 @@ function renderList(){
   const items=DB[SRC].map((c,i)=>({c,i})).filter(({c,i})=>{
     if(q&&!(`${c.n} ${c.set||''}`.toLowerCase().includes(q))) return false;
     const o=issues(c,SRC);
-    return f==='all'||(f==='wiki'&&c.url&&!c.file&&!c.img)||(f==='img'&&o.img)||(f==='txt'&&o.txt.length)||(f==='es'&&o.es.length)||(f==='todo'&&!c.gen)||(f==='pend'&&changedEntry(SRC,i));
+    return f==='all'||(f==='rev'&&c.rev&&c.rev.length)||(f==='wiki'&&c.url&&!c.file&&!c.img)||(f==='img'&&o.img)||(f==='txt'&&o.txt.length)||(f==='es'&&o.es.length)||(f==='todo'&&!c.gen)||(f==='pend'&&changedEntry(SRC,i));
   }).sort((a,b)=>a.c.n.localeCompare(b.c.n));
   $('count').textContent=`${items.length} de ${DB[SRC].length}`;
   $('list').innerHTML=items.map(({c,i})=>{ const u=imgUrl(c,true);
@@ -352,7 +364,22 @@ function renderEditMeta(){ const c=cur(); if(!c) return; const o=issues(c,SEL.sr
   $('eChips').innerHTML=ch.join('');
   const u=imgUrl(c,false); $('eImg').innerHTML=u?`<img alt="${esc(c.n)}" src="${esc(u)}">`:'Sin imagen';
   $('eImgDel').hidden=!c.file; $('eTitle').textContent=c.n||'Nuevo personaje';
+  renderRev();
 }
+/* fields that differ from the Zombicide Wiki: compare and decide */
+const FLABEL={atk:'Nombre del ataque',r:'Alcance',d:'Dados',hit:'Impacto',bt:'Azul · título',bd:'Azul · texto',ot:'Naranja · título',od:'Naranja · texto',rt:'Roja · título',rd:'Roja · texto'};
+function renderRev(){ const c=cur(), box=$('eRev'); const list=(c&&c.rev)||[]; box.hidden=!list.length; if(!list.length){ box.innerHTML=''; return; }
+  box.innerHTML='<h4>A revisar: distinto en la Zombicide Wiki</h4>'+list.map((r,k)=>{ const same=String(c[r.f]??'')===r.wiki;
+    return `<div class="revit"><span class="lbl">${esc(FLABEL[r.f]||r.f)}${r.note?' · <span style="font-weight:400;color:var(--muted)">'+esc(r.note)+'</span>':''}</span>
+      <div class="cmp"><b>Base</b><span>${esc(c[r.f]??'—')}</span><b>Wiki</b><span>${esc(r.wiki)}</span></div>
+      <div class="row2">${same?'':`<button class="btn" type="button" data-rev="wiki" data-k="${k}">Usar el de la wiki</button>`}
+      <button class="btn" type="button" data-rev="keep" data-k="${k}">${same?'Comprobado':'Dejar el de la base'}</button></div></div>`; }).join('');
+}
+$('eRev').addEventListener('click',e=>{ const b=e.target.closest('[data-rev]'), c=cur(); if(!b||!c||!c.rev) return;
+  const r=c.rev[+b.dataset.k]; if(!r) return;
+  if(b.dataset.rev==='wiki'){ c[r.f]=r.wiki; if(r.wiki_es) c[r.f+'_es']=r.wiki_es; }
+  c.rev.splice(+b.dataset.k,1); if(!c.rev.length) delete c.rev;
+  changedAll(); renderEdit(); });
 $('ef').addEventListener('input',e=>{ const el=e.target, f=el.dataset.f, c=cur(); if(!f||!c) return;
   if(el.type==='checkbox'){ if(el.checked) c[f]=true; else delete c[f]; }
   else { const v=el.value; if(v.trim()==='') delete c[f]; else c[f]=v; }
