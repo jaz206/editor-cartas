@@ -70,6 +70,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--ui);line-height:1.4
 .rt-wrap.bg-dark{background:#22262b}
 .rt-wrap.bg-green{background:#7e9a63}
 .rt-chk{display:flex;align-items:center;gap:5px;font:600 .8rem var(--ui,system-ui);color:var(--muted)}
+.rt-selbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,#ff00c8 10%,var(--panel))}
+.rt-selbar b{flex:1;font:600 .85rem var(--ui,system-ui)}
+.rt-btn.rt-del{background:#b3392f;border-color:#b3392f;color:#fff}
+.rt-sel{pointer-events:none}
 .cleanopts{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:.85rem;color:var(--muted)}
 .cleanopts .check{font-size:.85rem}
 .chip{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:8px;padding:6px 10px;font:500 .82rem var(--ui);cursor:pointer}
@@ -362,7 +366,7 @@ const EN={
 'No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.':'Couldn’t read the sheet: check that it’s a .json saved from this section.',
 'frente':'front','Nombre del personaje':'Character name','Ej.: RAYOS DE HIELO':'E.g. ICE BEAMS','Título de la habilidad azul':'Blue skill title','Título de la habilidad naranja':'Orange skill title','Título de la habilidad roja':'Red skill title',
 'Texto de la habilidad azul. Usa * para el símbolo de Poder.':'Blue skill text. Use * for the Power symbol.','Texto de la habilidad naranja. Usa * para el símbolo de Poder.':'Orange skill text. Use * for the Power symbol.','Texto de la habilidad roja. Usa * para el símbolo de Poder.':'Red skill text. Use * for the Power symbol.',
-'— Elige un personaje —':'— Choose a character —','Al subir, quitar:':'On upload, remove:','Retocar recorte':'Touch up cut-out','Primero sube o carga una imagen.':'First upload or load an image.','Dejar':'Keep','Quitar':'Remove','Rodear':'Lasso','Pincel':'Brush','sin blanco':'no white','Al dejar una zona, no recupera el blanco del fondo':'When keeping an area, don’t bring back the white background','Grosor':'Size','Deshacer':'Undo','Volver al original':'Back to original','Cancelar':'Cancel','Aplicar':'Apply','“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.':'“Keep”: circle or paint what was removed but should stay. “Remove”: circle or paint what should go.','fondo blanco':'white background','puntos de trama':'halftone dots','etiqueta del nombre':'name banner','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
+'— Elige un personaje —':'— Choose a character —','Al subir, quitar:':'On upload, remove:','Retocar recorte':'Touch up cut-out','Primero sube o carga una imagen.':'First upload or load an image.','Dejar':'Keep','Quitar':'Remove','Rodear':'Lasso','Pincel':'Brush','Por color':'By colour','Tolerancia':'Tolerance','solo zona conectada':'connected area only','Fondo a cuadros':'Checkered background','Fondo oscuro':'Dark background','Fondo verde':'Green background','Ampliar 1 px':'Grow 1 px','Deseleccionar':'Deselect','Borrar selección':'Delete selection','Seleccionado':'Selected','Pulsa sobre un color (por ejemplo, un punto de la trama) para seleccionar todo lo que se le parezca; cada clic añade más.':'Click a colour (for example a halftone dot) to select everything similar; each click adds more.','Hay una selección (en magenta): con “Quitar” añades zonas y con “Dejar” las sacas de la selección. Luego pulsa “Borrar selección”.':'There is a selection (magenta): “Remove” adds areas and “Keep” takes them out of it. Then press “Delete selection”.','sin blanco':'no white','Al dejar una zona, no recupera el blanco del fondo':'When keeping an area, don’t bring back the white background','Grosor':'Size','Deshacer':'Undo','Volver al original':'Back to original','Cancelar':'Cancel','Aplicar':'Apply','“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.':'“Keep”: circle or paint what was removed but should stay. “Remove”: circle or paint what should go.','fondo blanco':'white background','puntos de trama':'halftone dots','etiqueta del nombre':'name banner','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
 };
 /* default texts of a new card, per language (swapped on language change if still untouched) */
 const DEF_TEXT={
@@ -812,50 +816,82 @@ function cleanArt(src,opt){
 $('artIn').addEventListener('change',async e=>{const f=e.target.files[0]; e.target.value=''; if(!f)return; let src=await readFile(f), im=await loadImg(src); if(!im) return; const im0=im;
   if($('bgChk').checked){ const cut=cleanArt(im,{dots:$('dotChk').checked,banner:$('banChk').checked}); if(cut){ src=cut.toDataURL('image/png'); im=await loadImg(src); } }
   artOrig=im0; artSrc=src; art=im; artId++; changed();});
-/* ---------- manual retouch of a cut-out: circle (lasso) or paint what to keep or remove ---------- */
+/* ---------- manual retouch of a cut-out: circle (lasso), paint or pick by colour what to keep or remove ---------- */
 const RT_TXT=s=>(typeof t==='function'?t(s):s);
 function openRetouch(orig,current){
   return new Promise(resolve=>{
-    const W=current.naturalWidth||current.width, H=current.naturalHeight||current.height;
+    const W=current.naturalWidth||current.width, H=current.naturalHeight||current.height, N=W*H;
     const work=document.createElement('canvas'); work.width=W; work.height=H; const wg=work.getContext('2d',{willReadFrequently:true}); wg.drawImage(current,0,0,W,H);
     const src=document.createElement('canvas'); src.width=W; src.height=H; src.getContext('2d').drawImage(orig,0,0,W,H);
-    const undo=[]; const snap=()=>{ undo.push(wg.getImageData(0,0,W,H)); if(undo.length>25) undo.shift(); };
-    let mode='keep', tool='lasso', size=Math.round(Math.max(W,H)/40), bg='check';
+    let sel=null;                                  /* colour selection: Uint8Array mask, or null */
+    const undo=[]; const snap=()=>{ undo.push({img:wg.getImageData(0,0,W,H),sel:sel&&sel.slice()}); if(undo.length>25) undo.shift(); };
+    let mode='keep', tool='lasso', size=Math.round(Math.max(W,H)/40), tol=40;
     const ov=document.createElement('div'); ov.className='rt-ov'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); ov.setAttribute('aria-label',RT_TXT('Retocar recorte'));
     ov.innerHTML=`<div class="rt-box">
       <div class="rt-bar">
         <div class="rt-seg" data-g="mode"><button type="button" data-v="keep" aria-pressed="true">${RT_TXT('Dejar')}</button><button type="button" data-v="erase" aria-pressed="false">${RT_TXT('Quitar')}</button></div>
-        <div class="rt-seg" data-g="tool"><button type="button" data-v="lasso" aria-pressed="true">${RT_TXT('Rodear')}</button><button type="button" data-v="brush" aria-pressed="false">${RT_TXT('Pincel')}</button></div>
-        <label class="rt-chk" title="${RT_TXT('Al dejar una zona, no recupera el blanco del fondo')}"><input type="checkbox" checked> ${RT_TXT('sin blanco')}</label>
-        <label class="rt-size">${RT_TXT('Grosor')} <input type="range" min="2" max="${Math.round(Math.max(W,H)/8)}" value="${size}"></label>
-        <div class="rt-seg" data-g="bg"><button type="button" data-v="check" aria-pressed="true">▦</button><button type="button" data-v="dark" aria-pressed="false">■</button><button type="button" data-v="green" aria-pressed="false" style="color:#6f8f55">■</button></div>
+        <div class="rt-seg" data-g="tool"><button type="button" data-v="lasso" aria-pressed="true">${RT_TXT('Rodear')}</button><button type="button" data-v="brush" aria-pressed="false">${RT_TXT('Pincel')}</button><button type="button" data-v="color" aria-pressed="false">${RT_TXT('Por color')}</button></div>
+        <label class="rt-chk rt-nowhite" title="${RT_TXT('Al dejar una zona, no recupera el blanco del fondo')}"><input type="checkbox" checked> ${RT_TXT('sin blanco')}</label>
+        <label class="rt-size rt-brush">${RT_TXT('Grosor')} <input type="range" min="2" max="${Math.round(Math.max(W,H)/8)}" value="${size}"></label>
+        <label class="rt-size rt-col" hidden>${RT_TXT('Tolerancia')} <input type="range" min="5" max="120" value="${tol}"></label>
+        <label class="rt-chk rt-col" hidden><input type="checkbox" class="rt-cont"> ${RT_TXT('solo zona conectada')}</label>
+        <div class="rt-seg" data-g="bg"><button type="button" data-v="check" aria-pressed="true" title="${RT_TXT('Fondo a cuadros')}">▦</button><button type="button" data-v="dark" aria-pressed="false" title="${RT_TXT('Fondo oscuro')}">■</button><button type="button" data-v="green" aria-pressed="false" style="color:#6f8f55" title="${RT_TXT('Fondo verde')}">■</button></div>
         <span class="rt-sp"></span>
         <button type="button" class="rt-btn" data-a="undo">${RT_TXT('Deshacer')}</button>
         <button type="button" class="rt-btn" data-a="orig">${RT_TXT('Volver al original')}</button>
       </div>
-      <div class="rt-stage"><div class="rt-wrap bg-check"><canvas class="rt-img"></canvas><canvas class="rt-ov2"></canvas></div></div>
-      <div class="rt-foot"><span class="rt-hint">${RT_TXT('“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.')}</span>
+      <div class="rt-selbar" hidden><b class="rt-selinfo"></b>
+        <button type="button" class="rt-btn" data-a="grow">${RT_TXT('Ampliar 1 px')}</button>
+        <button type="button" class="rt-btn" data-a="none">${RT_TXT('Deseleccionar')}</button>
+        <button type="button" class="rt-btn rt-del" data-a="del">${RT_TXT('Borrar selección')}</button></div>
+      <div class="rt-stage"><div class="rt-wrap bg-check"><canvas class="rt-img"></canvas><canvas class="rt-sel"></canvas><canvas class="rt-ov2"></canvas></div></div>
+      <div class="rt-foot"><span class="rt-hint"></span>
         <button type="button" class="rt-btn" data-a="cancel">${RT_TXT('Cancelar')}</button><button type="button" class="rt-btn rt-pri" data-a="ok">${RT_TXT('Aplicar')}</button></div></div>`;
     document.body.appendChild(ov);
-    const view=ov.querySelector('.rt-img'), vg=view.getContext('2d'), lay=ov.querySelector('.rt-ov2'), lg=lay.getContext('2d'), wrap=ov.querySelector('.rt-wrap');
-    view.width=lay.width=W; view.height=lay.height=H;
+    const Q=s=>ov.querySelector(s);
+    const view=Q('.rt-img'), vg=view.getContext('2d'), sv=Q('.rt-sel'), sg2=sv.getContext('2d'), lay=Q('.rt-ov2'), lg=lay.getContext('2d'), wrap=Q('.rt-wrap');
+    view.width=lay.width=sv.width=W; view.height=lay.height=sv.height=H;
     const paint=()=>{ vg.clearRect(0,0,W,H); vg.drawImage(work,0,0); };
-    paint();
-    const fit=()=>{ const st=ov.querySelector('.rt-stage'), k=Math.min(st.clientWidth/W, st.clientHeight/H, 2);
+    const HINT={plain:'“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.',
+      color:'Pulsa sobre un color (por ejemplo, un punto de la trama) para seleccionar todo lo que se le parezca; cada clic añade más.',
+      sel:'Hay una selección (en magenta): con “Quitar” añades zonas y con “Dejar” las sacas de la selección. Luego pulsa “Borrar selección”.'};
+    function drawSel(){ sg2.clearRect(0,0,W,H); let n=0;
+      if(sel){ const id=sg2.createImageData(W,H), d=id.data; for(let p=0;p<N;p++) if(sel[p]){ n++; const i=p*4; d[i]=255; d[i+1]=0; d[i+2]=200; d[i+3]=150; } sg2.putImageData(id,0,0); }
+      if(sel&&!n) sel=null;
+      Q('.rt-selbar').hidden=!sel; if(sel) Q('.rt-selinfo').textContent=RT_TXT('Seleccionado')+': '+Math.round(n/N*1000)/10+' %';
+      Q('.rt-hint').textContent=RT_TXT(sel?HINT.sel:tool==='color'?HINT.color:HINT.plain); }
+    paint(); drawSel();
+    const fit=()=>{ const st=Q('.rt-stage'), k=Math.min(st.clientWidth/W, st.clientHeight/H, 2);
       wrap.style.width=W*k+'px'; wrap.style.height=H*k+'px'; };
     fit(); addEventListener('resize',fit);
-    /* apply a mask path (filled lasso or brush stroke) in the current mode */
+    const maskOf=drawMask=>{ const m=document.createElement('canvas'); m.width=W; m.height=H; const mg=m.getContext('2d'); mg.fillStyle=mg.strokeStyle='#000'; drawMask(mg); return m; };
+    /* lasso/brush on the picture itself */
     function apply(drawMask){
-      snap();
-      const m=document.createElement('canvas'); m.width=W; m.height=H; const mg=m.getContext('2d'); mg.fillStyle=mg.strokeStyle='#000'; drawMask(mg);
+      snap(); const m=maskOf(drawMask), mg=m.getContext('2d');
       wg.save(); wg.globalCompositeOperation='destination-out'; wg.drawImage(m,0,0); wg.restore();      /* clear the area */
       if(mode==='keep'){ mg.globalCompositeOperation='source-in'; mg.drawImage(src,0,0);                     /* put the original back */
-        if(ov.querySelector('.rt-chk input').checked){ const id=mg.getImageData(0,0,W,H), d=id.data;           /* …without its white background */
+        if(Q('.rt-nowhite input').checked){ const id=mg.getImageData(0,0,W,H), d=id.data;                     /* …without its white background */
           for(let i=0;i<d.length;i+=4){ if(!d[i+3]) continue; const mn=Math.min(d[i],d[i+1],d[i+2]), mx=Math.max(d[i],d[i+1],d[i+2]);
             if(mn>=236&&mx-mn<=22) d[i+3]=0; else if(mn>=200&&mx-mn<=22) d[i+3]=Math.round(d[i+3]*(236-mn)/36); }
           mg.putImageData(id,0,0); }
         wg.drawImage(m,0,0); }
       paint();
+    }
+    /* lasso/brush on the selection: "Quitar" adds to it, "Dejar" takes out of it */
+    function applySel(drawMask){
+      snap(); const a=maskOf(drawMask).getContext('2d').getImageData(0,0,W,H).data;
+      for(let p=0;p<N;p++) if(a[p*4+3]>100) sel[p]=mode==='erase'?1:0; drawSel(); }
+    /* pick by colour */
+    function pick(x,y){
+      x=Math.max(0,Math.min(W-1,Math.round(x))); y=Math.max(0,Math.min(H-1,Math.round(y)));
+      const d=wg.getImageData(0,0,W,H).data, i0=(y*W+x)*4; if(d[i0+3]<10) return;
+      const r0=d[i0],g0=d[i0+1],b0=d[i0+2], t2=tol*tol;
+      const ok=p=>{ const i=p*4; if(d[i+3]<10) return false; const dr=d[i]-r0,dg=d[i+1]-g0,db=d[i+2]-b0; return dr*dr+dg*dg+db*db<=t2; };
+      snap(); if(!sel) sel=new Uint8Array(N);
+      if(Q('.rt-cont').checked){ const q=new Int32Array(N), seen=new Uint8Array(N); let h=0,tl=0; const p0=y*W+x; q[tl++]=p0; seen[p0]=1;
+        while(h<tl){ const p=q[h++]; sel[p]=1; const px=p%W; for(const n of [px>0?p-1:-1,px<W-1?p+1:-1,p-W,p+W]){ if(n<0||n>=N||seen[n]) continue; seen[n]=1; if(ok(n)) q[tl++]=n; } } }
+      else for(let p=0;p<N;p++) if(ok(p)) sel[p]=1;
+      drawSel();
     }
     let pts=null;
     const toImg=e=>{ const r=lay.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]; };
@@ -864,22 +900,32 @@ function openRetouch(orig,current){
       lg.beginPath(); lg.moveTo(pts[0][0],pts[0][1]); for(const p of pts) lg.lineTo(p[0],p[1]);
       if(tool==='lasso'){ lg.closePath(); lg.fillStyle=col+'.25)'; lg.fill(); lg.lineWidth=Math.max(2,W/350); lg.strokeStyle=col+'1)'; lg.setLineDash([W/120,W/180]); lg.stroke(); lg.setLineDash([]); }
       else { lg.lineWidth=size; lg.strokeStyle=col+'.45)'; lg.stroke(); } };
-    lay.addEventListener('pointerdown',e=>{ e.preventDefault(); lay.setPointerCapture(e.pointerId); pts=[toImg(e)]; drawLay(); });
+    lay.addEventListener('pointerdown',e=>{ e.preventDefault(); if(tool==='color'){ const [x,y]=toImg(e); pick(x,y); return; }
+      lay.setPointerCapture(e.pointerId); pts=[toImg(e)]; drawLay(); });
     lay.addEventListener('pointermove',e=>{ if(!pts) return; const p=toImg(e), l=pts[pts.length-1]; if(Math.hypot(p[0]-l[0],p[1]-l[1])>W/400){ pts.push(p); drawLay(); } });
-    const end=()=>{ if(!pts) return; const P=pts; pts=null; lg.clearRect(0,0,W,H);
-      if(tool==='lasso'&&P.length>2) apply(g=>{ g.beginPath(); g.moveTo(P[0][0],P[0][1]); for(const p of P) g.lineTo(p[0],p[1]); g.closePath(); g.fill(); });
-      if(tool==='brush') apply(g=>{ g.lineJoin=g.lineCap='round'; g.lineWidth=size; g.beginPath(); g.moveTo(P[0][0],P[0][1]); for(const p of P) g.lineTo(p[0],p[1]); if(P.length===1) g.lineTo(P[0][0]+0.1,P[0][1]); g.stroke(); }); };
+    const end=()=>{ if(!pts) return; const P=pts; pts=null; lg.clearRect(0,0,W,H); const run=sel?applySel:apply;
+      if(tool==='lasso'&&P.length>2) run(g=>{ g.beginPath(); g.moveTo(P[0][0],P[0][1]); for(const p of P) g.lineTo(p[0],p[1]); g.closePath(); g.fill(); });
+      if(tool==='brush') run(g=>{ g.lineJoin=g.lineCap='round'; g.lineWidth=size; g.beginPath(); g.moveTo(P[0][0],P[0][1]); for(const p of P) g.lineTo(p[0],p[1]); if(P.length===1) g.lineTo(P[0][0]+0.1,P[0][1]); g.stroke(); }); };
     lay.addEventListener('pointerup',end); lay.addEventListener('pointercancel',end);
     ov.querySelectorAll('.rt-seg').forEach(sg=>sg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
       sg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
-      const v=b.dataset.v, gname=sg.dataset.g; if(gname==='mode') mode=v; if(gname==='tool') tool=v; if(gname==='bg'){ bg=v; wrap.className='rt-wrap bg-'+v; } }));
-    ov.querySelector('.rt-size input').addEventListener('input',e=>{ size=+e.target.value; });
+      const v=b.dataset.v, gname=sg.dataset.g; if(gname==='mode') mode=v; if(gname==='bg') wrap.className='rt-wrap bg-'+v;
+      if(gname==='tool'){ tool=v; ov.querySelectorAll('.rt-col').forEach(x=>x.hidden=v!=='color'); Q('.rt-brush').hidden=v!=='brush'; lay.style.cursor=v==='color'?'copy':'crosshair'; drawSel(); } }));
+    Q('.rt-brush').hidden=true;
+    Q('.rt-brush input').addEventListener('input',e=>{ size=+e.target.value; });
+    Q('.rt-col input[type=range]').addEventListener('input',e=>{ tol=+e.target.value; });
+    Q('.rt-selbar').addEventListener('click',e=>{ const a=e.target.dataset&&e.target.dataset.a; if(!a||!sel) return;
+      if(a==='none'){ snap(); sel=null; drawSel(); }
+      if(a==='grow'){ snap(); const s2=sel.slice(); for(let p=0;p<N;p++){ if(sel[p]) continue; const x=p%W;
+          if((x>0&&sel[p-1])||(x<W-1&&sel[p+1])||(p>=W&&sel[p-W])||(p<N-W&&sel[p+W])) s2[p]=1; } sel=s2; drawSel(); }
+      if(a==='del'){ snap(); const id=wg.getImageData(0,0,W,H), d=id.data; for(let p=0;p<N;p++) if(sel[p]) d[p*4+3]=0; wg.putImageData(id,0,0); sel=null; paint(); drawSel(); } });
     const close=res=>{ removeEventListener('resize',fit); removeEventListener('keydown',key); ov.remove(); resolve(res); };
-    const key=e=>{ if(e.key==='Escape') close(null); if((e.ctrlKey||e.metaKey)&&e.key==='z'){ e.preventDefault(); ov.querySelector('[data-a=undo]').click(); } };
+    const key=e=>{ if(e.key==='Escape') close(null); if((e.ctrlKey||e.metaKey)&&e.key==='z'){ e.preventDefault(); Q('[data-a=undo]').click(); }
+      if((e.key==='Delete'||e.key==='Backspace')&&sel){ e.preventDefault(); Q('[data-a=del]').click(); } };
     addEventListener('keydown',key);
-    ov.querySelector('.rt-foot').addEventListener('click',e=>{ const a=e.target.dataset&&e.target.dataset.a; if(a==='cancel') close(null); if(a==='ok') close(work); });
-    ov.querySelector('[data-a=undo]').addEventListener('click',()=>{ const s=undo.pop(); if(s){ wg.putImageData(s,0,0); paint(); } });
-    ov.querySelector('[data-a=orig]').addEventListener('click',()=>{ snap(); wg.clearRect(0,0,W,H); wg.drawImage(src,0,0); paint(); });
+    Q('.rt-foot').addEventListener('click',e=>{ const a=e.target.dataset&&e.target.dataset.a; if(a==='cancel') close(null); if(a==='ok') close(work); });
+    Q('[data-a=undo]').addEventListener('click',()=>{ const s=undo.pop(); if(s){ wg.putImageData(s.img,0,0); sel=s.sel; paint(); drawSel(); } });
+    Q('[data-a=orig]').addEventListener('click',()=>{ snap(); wg.clearRect(0,0,W,H); wg.drawImage(src,0,0); sel=null; paint(); drawSel(); });
   });
 }
 $('retouchBtn').addEventListener('click',async()=>{ if(!art){ $('status').textContent=t('Primero sube o carga una imagen.'); return; }
