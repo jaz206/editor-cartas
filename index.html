@@ -477,9 +477,11 @@ function drawBack(){
   if(S.copy&&IMG.copyright_mark) ctx.drawImage(IMG.copyright_mark,1296,768);
   const n=NAMEB[m], p=IMG['plate_back_'+m], text=up(S.name).trim()||' ';
   let size=n.size, track=n.track*size/1000; font(n.font,size); let w=tw(text,track)+n.obl*size*0.7;
-  while(w+150>1100&&size>24){size-=1.5;track=n.track*size/1000;font(n.font,size);w=tw(text,track)+n.obl*size*0.7;}
-  const W=Math.max(240,w+150); plateCols('plate_back_'+m,128,760,W,100);
-  ctx.fillStyle='#fff'; ctx.textAlign='left'; drawText(text,128+W*0.477,n.y,track,'center',n.obl);
+  /* as on the printed cards: box hugs the name (~28 px each side) and is centred under the logo */
+  while(w>600&&size>24){size-=1.5;track=n.track*size/1000;font(n.font,size);w=tw(text,track)+n.obl*size*0.7;}
+  const W=Math.max(170,Math.round(w+56+26)), CX=LOGO.x+LOGO.w/2, x0=CX-W/2;
+  plateCols('plate_back_'+m,x0,760,W,40);
+  ctx.fillStyle='#fff'; ctx.textAlign='left'; drawText(text,x0+W/2-6+(n.obl?-n.obl*size*0.3:0),n.y,track,'center',n.obl);
 }
 function draw(){
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,CW,CH); ctx.textBaseline='alphabetic'; ctx.textAlign='left';
