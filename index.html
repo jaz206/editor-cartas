@@ -166,6 +166,7 @@ details.about b{color:var(--ink)}
           <button class="btn pb" type="button" data-part="yellow" style="--c:#d39a1f">Amarilla</button>
           <button class="btn pb" type="button" data-part="orange" style="--c:#d2622f">Naranja</button>
           <button class="btn pb" type="button" data-part="red" style="--c:#a8282a">Roja</button>
+          <button class="btn" type="button" data-part="img" style="grid-column:1/-1">Imagen del personaje</button>
         </div>
         <p class="hint" id="dbHint">Carga todo el personaje o solo una parte: puedes elegir otro personaje y traer solo su habilidad roja, azul…</p>
       </section>
@@ -669,11 +670,20 @@ function fillDB(){
   const bySet={}; DBC[src].forEach((c,i)=>{(bySet[c.set]=bySet[c.set]||[]).push([c.n,i]);});
   Object.keys(bySet).sort((a,b)=>a==='Core Box'?-1:b==='Core Box'?1:a.localeCompare(b)).forEach(set=>{
     const g=document.createElement('optgroup'); g.label=set;
-    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const o=document.createElement('option');o.value=i;o.textContent=n;g.appendChild(o);});
+    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img?' · con imagen':'')+(c.gen?' · hecho ✓':'');g.appendChild(o);});
     sel.appendChild(g); });
 }
 function dbPick(){ return DBC?DBC[$('dbSrc').value][+$('dbChar').value]:null; }
-const PART_LABEL={name:'nombre',atk:'ataque',blue:'habilidad azul',yellow:'banda amarilla',orange:'habilidad naranja',red:'habilidad roja'};
+async function loadDriveArt(c){
+  if(!c.img){ $('dbHint').textContent=`${c.n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.`; return false; }
+  $('dbHint').textContent=`Cargando la imagen de ${c.n}…`;
+  const src='api/img?id='+encodeURIComponent(c.img), im=await loadImg(src);
+  if(im){ art=im; artSrc=src; artId++; changed(); return true; }
+  const link='https://drive.google.com/thumbnail?sz=w2400&id='+encodeURIComponent(c.img);
+  $('dbHint').innerHTML=`No se pudo traer la imagen de ${c.n} desde Drive (en la vista previa de Claude no funciona; en tu web publicada sí). <a href="${link}" target="_blank" rel="noopener">Ábrela aquí</a>, guárdala y súbela con “Subir imagen del personaje”.`;
+  return false;
+}
+const PART_LABEL={img:'imagen',name:'nombre',atk:'ataque',blue:'habilidad azul',yellow:'banda amarilla',orange:'habilidad naranja',red:'habilidad roja'};
 function applyPart(c,part){
   if(part==='name') S.name=c.n;
   if(part==='atk'){ S.atkTitle=c.atk; S.atype=c.type==='ranged'?'ranged':'melee'; S.range=c.r; S.dice=c.d; S.hit=c.hit; }
@@ -686,8 +696,10 @@ $('dbSrc').addEventListener('change',fillDB);
 $('dbAll').addEventListener('click',()=>{ const c=dbPick(); if(!c) return; const src=$('dbSrc').value;
   ['name','atk','blue','yellow','orange','red'].forEach(p=>applyPart(c,p)); S.mode=src;
   if(src==='hero'&&c.hp){ const h=parseInt(c.hp,10); if(h>=1&&h<=8) S.health=h; }
-  changed(); $('dbHint').textContent=`Cargado ${c.n} (${src==='hero'?'Héroe':'Zombi'}) completo.`+(c.bt?'':' Este zombi no trae título azul en la base: escríbelo a mano.'); });
-document.querySelectorAll('.parts [data-part]').forEach(b=>b.addEventListener('click',()=>{ const c=dbPick(); if(!c) return;
+  changed(); const msg=`Cargado ${c.n} (${src==='hero'?'Héroe':'Zombi'}) completo.`+(c.bt?'':' Este zombi no trae título azul en la base: escríbelo a mano.');
+  $('dbHint').textContent=msg; if(c.img){ loadDriveArt(c).then(ok=>{ if(ok) $('dbHint').textContent=msg+' Imagen cargada.'; }); } });
+document.querySelectorAll('.parts [data-part]').forEach(b=>b.addEventListener('click',async()=>{ const c=dbPick(); if(!c) return;
+  if(b.dataset.part==='img'){ if(await loadDriveArt(c)) $('dbHint').textContent=`Imagen de ${c.n} cargada.`; return; }
   applyPart(c,b.dataset.part); changed(); $('dbHint').textContent=`Copiado de ${c.n} → ${PART_LABEL[b.dataset.part]}.`; }));
 
 /* ---------- print sheet (A4) ---------- */

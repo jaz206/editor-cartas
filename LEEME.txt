@@ -10,3 +10,8 @@ Si guardas tu logo como  assets/logo_default.png  (PNG transparente),
 el editor lo pone automaticamente en el reverso al abrirse.
 
 Uso personal y no comercial. Credito de la plantilla: LukeS7 (BoardGameGeek).
+
+IMAGENES DESDE GOOGLE DRIVE
+La carpeta api/ contiene img.js: Vercel la publica como /api/img y sirve las
+imagenes de Drive desde tu propio dominio para poder exportarlas e imprimirlas.
+Cada archivo de Drive debe estar compartido como "cualquier persona con el enlace".
