@@ -88,6 +88,24 @@ details.about{margin-top:12px;padding:4px 14px}
 details.about summary{cursor:pointer;padding:9px 0;font:700 .82rem var(--cond);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 details.about div{font-size:.86rem;color:var(--muted);padding-bottom:12px}
 details.about b{color:var(--ink)}
+.sheet{margin-top:18px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.sheet-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sheet-head h2{margin:0;font:700 1rem var(--cond);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.sheet .bar{margin-top:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.cards:empty::before{content:"Todavía no hay cartas en la hoja. Diseña una y pulsa “Añadir carta a la hoja”.";color:var(--muted);font-size:.88rem;grid-column:1/-1}
+.ci{border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px;background:var(--field)}
+.ci.editing{outline:2px solid var(--accent)}
+.ci img{width:100%;border-radius:4px;display:block}
+.ci .meta{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:.8rem}
+.ci .meta b{font:700 .85rem var(--cond);letter-spacing:.03em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tag{font:600 .7rem var(--cond);text-transform:uppercase;letter-spacing:.05em;padding:2px 6px;border-radius:5px;color:#fff;flex:none}
+.tag.zombie{background:var(--zombie)}.tag.hero{background:var(--hero)}
+.ci .acts{display:flex;gap:6px}.ci .acts button{flex:1;padding:6px 4px;font-size:.78rem}
+.opts{display:flex;flex-wrap:wrap;gap:8px 18px}
+.pages{display:flex;flex-wrap:wrap;gap:12px}
+.pages figure{margin:0;display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted)}
+.pages canvas{width:150px;height:auto;border:1px solid var(--line);background:#fff;border-radius:3px}
 </style>
 
 <div class="wrap">
@@ -210,8 +228,34 @@ details.about b{color:var(--ink)}
       </details>
     </div>
   </div>
+
+  <section class="panel sheet" aria-labelledby="sheetH">
+    <div class="sheet-head">
+      <h2 id="sheetH">Hoja de impresión A4</h2>
+      <span class="status" id="sheetInfo"></span>
+    </div>
+    <div class="bar">
+      <button class="btn primary" type="button" id="addCard">Añadir carta a la hoja</button>
+      <button class="btn" type="button" id="updCard" hidden>Guardar cambios en la hoja</button>
+      <button class="btn" type="button" id="newCard">Empezar carta nueva</button>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="opts">
+      <label class="check"><input type="checkbox" id="duplexChk" checked> Reversos espejados para imprimir a doble cara (volteo por borde largo)</label>
+      <label class="check"><input type="checkbox" id="marksChk" checked> Marcas de corte</label>
+    </div>
+    <div class="bar">
+      <button class="btn primary" type="button" id="pdfBtn">Descargar PDF A4</button>
+      <button class="btn" type="button" id="exportSheet">Guardar hoja .json</button>
+      <label class="btn" for="importSheet">Cargar hoja .json<input type="file" id="importSheet" accept="application/json,.json" hidden></label>
+      <span class="status" id="pdfStatus"></span>
+    </div>
+    <p class="hint">Cada carta sale a 110 × 70 mm exactos con 1 mm de sangrado. Caben 6 por A4 (4 horizontales y 2 giradas). Imprime al 100 % o “tamaño real”, sin “ajustar a la página”; para doble cara, elige volteo por el borde largo.</p>
+    <div class="pages" id="pages"></div>
+  </section>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -577,6 +621,124 @@ $('loadJson').addEventListener('change',async e=>{
   catch(err){ $('status').textContent='No se pudo leer el archivo: comprueba que sea un .json guardado con este editor.'; }
 });
 
+/* ---------- print sheet (A4) ---------- */
+const MM=300/25.4;                          /* template is 300 ppi: 1299×827 px = 110×70 mm */
+const A4={w:210,h:297}, CARD={w:110,h:70}, GAP=2, BLEED=1;
+function slotsA4(){
+  const bw=CARD.w+GAP+CARD.h, bh=4*CARD.h+3*GAP, ox=(A4.w-bw)/2, oy=(A4.h-bh)/2, s=[];
+  for(let i=0;i<4;i++) s.push({x:ox,y:oy+i*(CARD.h+GAP),w:CARD.w,h:CARD.h,rot:0});
+  const x1=ox+CARD.w+GAP; for(let j=0;j<2;j++) s.push({x:x1,y:oy+j*(CARD.w+GAP),w:CARD.h,h:CARD.w,rot:1});
+  return s;
+}
+const PER=slotsA4().length;
+const DB={db:null,
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r=indexedDB.open('mz-dash',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('cards',{keyPath:'id'}); r.onsuccess=()=>{this.db=r.result;res(r.result);}; r.onerror=()=>rej(r.error); }); },
+  async tx(mode,fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('cards',mode), st=t.objectStore('cards'), q=fn(st);
+    t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); }); },
+  all(){ return this.tx('readonly',st=>st.getAll()); }, put(c){ return this.tx('readwrite',st=>st.put(c)); }, del(id){ return this.tx('readwrite',st=>st.delete(id)); }
+};
+let CARDS=[], memOnly=false, editingId=null;
+async function loadCards(){ try{ CARDS=(await DB.all()||[]).sort((a,b)=>a.created-b.created); }catch(e){ memOnly=true; } renderCards(); }
+async function storeCard(c){ const i=CARDS.findIndex(x=>x.id===c.id); if(i>=0) CARDS[i]=c; else CARDS.push(c);
+  if(!memOnly){ try{ await DB.put(c); }catch(e){ memOnly=true; } } renderCards(); }
+async function removeCard(id){ CARDS=CARDS.filter(c=>c.id!==id); if(editingId===id) editingId=null; if(!memOnly){ try{ await DB.del(id);}catch(e){} } renderCards(); }
+function thumbOf(face){ const prev=S.face; S.face=face; draw();
+  const t=document.createElement('canvas'); t.width=320; t.height=Math.round(320*TRIM.h/TRIM.w);
+  t.getContext('2d').drawImage(cv,TRIM.x,TRIM.y,TRIM.w,TRIM.h,0,0,t.width,t.height); S.face=prev; draw(); return t.toDataURL('image/jpeg',0.82); }
+function currentCard(id){ const st=JSON.parse(JSON.stringify(S)); st.face='front';
+  return {id:id||('c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)), created:Date.now(), state:st, art:artSrc||null, logo:logoSrc||null, thumb:thumbOf('front')}; }
+function renderCards(){
+  const box=$('cards'); box.innerHTML='';
+  for(const c of CARDS){ const d=document.createElement('div'); d.className='ci'+(c.id===editingId?' editing':'');
+    const nm=(c.state.name||'Sin nombre').toUpperCase(), md=c.state.mode;
+    d.innerHTML=`<img alt="" src="${c.thumb}"><div class="meta"><b title="${nm}">${nm}</b><span class="tag ${md}">${md==='zombie'?'Zombi':'Héroe'}</span></div>
+      <div class="acts"><button class="btn" type="button" data-a="edit">Editar</button><button class="btn" type="button" data-a="del">Quitar</button></div>`;
+    d.querySelector('[data-a=edit]').onclick=()=>editCard(c.id); d.querySelector('[data-a=del]').onclick=()=>removeCard(c.id);
+    box.appendChild(d); }
+  const n=CARDS.length, pages=Math.ceil(n/PER);
+  $('sheetInfo').textContent=n?`${n} carta${n>1?'s':''} · ${pages} hoja${pages>1?'s':''} A4 (${pages*2} páginas con reversos) · ${PER*pages-n} hueco${PER*pages-n===1?'':'s'} libre${PER*pages-n===1?'':'s'}`:'';
+  $('updCard').hidden=!editingId; renderPages();
+}
+async function editCard(id){ const c=CARDS.find(x=>x.id===id); if(!c) return;
+  Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)),JSON.parse(JSON.stringify(c.state)));
+  art=c.art?await loadImg(c.art):null; artSrc=c.art; artId++; if(c.logo){logo=await loadImg(c.logo);logoSrc=c.logo;}
+  editingId=id; changed(); renderCards(); window.scrollTo({top:0,behavior:'smooth'}); }
+$('addCard').addEventListener('click',async()=>{ const c=currentCard(); editingId=null; await storeCard(c);
+  $('pdfStatus').textContent=`“${(S.name||'').toUpperCase()}” añadida a la hoja.`; });
+$('updCard').addEventListener('click',async()=>{ if(!editingId) return; const old=CARDS.find(x=>x.id===editingId); const c=currentCard(editingId); if(old) c.created=old.created;
+  await storeCard(c); $('pdfStatus').textContent='Cambios guardados en la hoja.'; });
+$('newCard').addEventListener('click',()=>{ const keepLogo=logo, keepLogoSrc=logoSrc; Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)));
+  art=null; artSrc=null; artId++; logo=keepLogo; logoSrc=keepLogoSrc; editingId=null; changed(); renderCards(); });
+
+/* render any saved card without touching the editor */
+async function withCard(card,fn){
+  const keep={S:JSON.parse(JSON.stringify(S)),art,artSrc,artId,logo,logoSrc};
+  Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)),JSON.parse(JSON.stringify(card.state)));
+  art=card.art?await loadImg(card.art):null; artId='pdf-'+card.id; if(card.logo) logo=await loadImg(card.logo);
+  try{ return await fn(); }
+  finally{ Object.keys(S).forEach(k=>delete S[k]); Object.assign(S,keep.S); art=keep.art; artSrc=keep.artSrc; artId=keep.artId; logo=keep.logo; logoSrc=keep.logoSrc; draw(); }
+}
+function faceImage(face,rot){
+  S.face=face; draw();
+  const b=BLEED*MM, sw=TRIM.w+2*b, sh=TRIM.h+2*b, c=document.createElement('canvas'), g=c.getContext('2d');
+  if(!rot){ c.width=Math.round(sw); c.height=Math.round(sh); g.drawImage(cv,TRIM.x-b,TRIM.y-b,sw,sh,0,0,c.width,c.height); }
+  else { c.width=Math.round(sh); c.height=Math.round(sw); g.translate(c.width/2,c.height/2); g.rotate(rot*Math.PI/2); g.drawImage(cv,TRIM.x-b,TRIM.y-b,sw,sh,-sw/2,-sh/2,sw,sh); }
+  return c.toDataURL('image/jpeg',0.93);
+}
+function backSlot(s,duplex){ return {x:duplex?A4.w-s.x-s.w:s.x, y:s.y, w:s.w, h:s.h, rot:s.rot?(duplex?-1:1):0}; }
+function cropMarks(doc,slots){
+  doc.setLineWidth(0.15); doc.setDrawColor(0,0,0); const L=3.2, off=0.8;
+  const top=Math.min(...slots.map(s=>s.y)), bot=Math.max(...slots.map(s=>s.y+s.h)), lef=Math.min(...slots.map(s=>s.x)), rig=Math.max(...slots.map(s=>s.x+s.w));
+  for(const s of slots){
+    for(const x of [s.x,s.x+s.w]){ doc.line(x,top-off-L,x,top-off); doc.line(x,bot+off,x,bot+off+L); }
+    for(const y of [s.y,s.y+s.h]){ if(s.x<=lef+0.01) doc.line(lef-off-L,y,lef-off,y); if(s.x+s.w>=rig-0.01) doc.line(rig+off,y,rig+off+L,y); }
+  }
+}
+async function buildPdf(asBlob){
+  if(!CARDS.length){ $('pdfStatus').textContent='Añade al menos una carta a la hoja.'; return null; }
+  if(!window.jspdf){ $('pdfStatus').textContent='No se pudo cargar el generador de PDF: comprueba la conexión a internet y recarga la página.'; return null; }
+  const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+  const slots=slotsA4(), duplex=$('duplexChk').checked, marks=$('marksChk').checked, pages=Math.ceil(CARDS.length/PER);
+  for(let p=0;p<pages;p++){
+    const group=CARDS.slice(p*PER,(p+1)*PER), used=slots.slice(0,group.length);
+    for(const face of ['front','back']){
+      if(p>0||face==='back') doc.addPage();
+      const sl=face==='front'?used:used.map(s=>backSlot(s,duplex));
+      for(let i=0;i<group.length;i++){
+        $('pdfStatus').textContent=`Preparando hoja ${p+1} de ${pages}: ${face==='front'?'frentes':'reversos'} ${i+1}/${group.length}…`;
+        const s=sl[i], img=await withCard(group[i],()=>faceImage(face,s.rot));
+        doc.addImage(img,'JPEG',s.x-BLEED,s.y-BLEED,s.w+2*BLEED,s.h+2*BLEED,undefined,'FAST');
+      }
+      if(marks) cropMarks(doc,sl);
+    }
+  }
+  $('pdfStatus').textContent=`PDF listo: ${pages} hoja${pages>1?'s':''} (${pages*2} páginas).`;
+  if(asBlob) return doc.output('blob');
+  doc.save(`cartas-marvel-zombies-${CARDS.length}.pdf`);
+  $('pdfStatus').textContent+=' Si no se descarga (pasa en la vista previa de Claude), ábrelo desde tu web publicada.'; return null;
+}
+$('pdfBtn').addEventListener('click',()=>buildPdf(false));
+function renderPages(){
+  const box=$('pages'); box.innerHTML=''; const slots=slotsA4(), k=1.2, pages=Math.ceil(CARDS.length/PER);
+  for(let p=0;p<pages;p++){
+    const fig=document.createElement('figure'), c=document.createElement('canvas'); c.width=A4.w*k*2; c.height=A4.h*k*2;
+    const g=c.getContext('2d'); g.scale(k*2,k*2); g.fillStyle='#fff'; g.fillRect(0,0,A4.w,A4.h);
+    CARDS.slice(p*PER,(p+1)*PER).forEach((cd,i)=>{ const s=slots[i], im=new Image(); im.onload=()=>{
+      g.save(); if(s.rot){ g.translate(s.x+s.w/2,s.y+s.h/2); g.rotate(Math.PI/2); g.drawImage(im,-s.h/2,-s.w/2,s.h,s.w); } else g.drawImage(im,s.x,s.y,s.w,s.h); g.restore(); }; im.src=cd.thumb; });
+    slots.slice(CARDS.slice(p*PER,(p+1)*PER).length).forEach(s=>{ g.setLineDash([2,2]); g.strokeStyle='#bbb'; g.lineWidth=0.4; g.strokeRect(s.x,s.y,s.w,s.h); });
+    fig.appendChild(c); const cap=document.createElement('figcaption'); cap.textContent=`Hoja ${p+1} · frentes`; fig.appendChild(cap); box.appendChild(fig);
+  }
+}
+function download(blob,name){ const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000); }
+$('exportSheet').addEventListener('click',()=>{ if(!CARDS.length){$('pdfStatus').textContent='La hoja está vacía.';return;}
+  download(new Blob([JSON.stringify({v:2,cards:CARDS})],{type:'application/json'}),`hoja-cartas-${CARDS.length}.json`); });
+$('importSheet').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return;
+  try{ const d=JSON.parse(await f.text()); const list=d.cards||[]; for(const c of list){ c.id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); c.created=Date.now()+Math.random(); await storeCard(c);}
+    $('pdfStatus').textContent=`${list.length} carta${list.length===1?'':'s'} añadida${list.length===1?'':'s'} a la hoja.`; }
+  catch(err){ $('pdfStatus').textContent='No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.'; }
+  e.target.value=''; });
+
 /* theme */
 $('themeBtn').addEventListener('click',()=>{const r=document.documentElement,c=r.getAttribute('data-theme');
   const dark=c?c==='dark':matchMedia('(prefers-color-scheme: dark)').matches; r.setAttribute('data-theme',dark?'light':'dark');});
@@ -589,6 +751,7 @@ $('themeBtn').addEventListener('click',()=>{const r=document.documentElement,c=r
   const dl=await loadImg('assets/logo_default.png'); if(dl&&!logo){logo=dl;}
   try{ await Promise.all(['MonsterMovies','DevilDog','TabletTitle','TabletNum','TabletBody','TabletAtk'].map(f=>document.fonts.load(`40px "${f}"`))); }catch(e){}
   syncUI(); draw(); placeTrim();
+  await loadCards();
   window.__ready=true;
 })();
 window.__S=S; window.__setArt=async src=>{artSrc=src;art=await loadImg(src);artId++;draw();};
