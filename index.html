@@ -44,6 +44,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--ui);line-height:1.4
 .top h1{margin:0;font-family:var(--cond);font-weight:700;font-size:1.65rem;letter-spacing:.02em;text-transform:uppercase}
 .top p{margin:0;color:var(--muted);font-size:.9rem}
 .top .sp{flex:1}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lang button{border:0;background:var(--panel);color:var(--muted);padding:6px 10px;font:600 .82rem var(--ui);cursor:pointer}
+.lang button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
 .chip{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:8px;padding:6px 10px;font:500 .82rem var(--ui);cursor:pointer}
 .grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:860px){.grid{grid-template-columns:1fr}}
@@ -112,11 +115,12 @@ details.about b{color:var(--ink)}
 .pages canvas{width:150px;height:auto;border:1px solid var(--line);background:#fff;border-radius:3px}
 </style>
 
-<div class="wrap">
+<div class="wrap" id="app">
   <div class="top">
     <h1>Editor de Dashboards</h1>
     <p>Marvel Zombies · réplica de la plantilla de LukeS7</p>
     <span class="sp"></span>
+    <div class="lang" role="group" aria-label="Idioma"><button type="button" data-lang="es" aria-pressed="true">ES</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
     <button class="chip" id="themeBtn" type="button">Tema</button>
   </div>
 
@@ -145,7 +149,7 @@ details.about b{color:var(--ink)}
             <label><input type="radio" name="adjust" value="big"><span>Figura grande</span></label>
           </div>
         </div>
-        <label class="f">Zoom <span id="zoomLbl" style="text-transform:none"></span><input type="range" id="zoom" min="0.3" max="3" step="0.01" value="1"></label>
+        <label class="f">Zoom <span id="zoomLbl" data-dyn style="text-transform:none"></span><input type="range" id="zoom" min="0.3" max="3" step="0.01" value="1"></label>
         <div class="row">
           <button class="btn" type="button" id="resetFit">Centrar</button>
         </div>
@@ -156,7 +160,7 @@ details.about b{color:var(--ink)}
         <h2>Base de personajes</h2>
         <div class="row">
           <label class="f" style="flex:0 0 40%">Fuente<select id="dbSrc"><option value="hero">Héroes</option><option value="zombie">Zombis</option></select></label>
-          <label class="f">Personaje<select id="dbChar"></select></label>
+          <label class="f">Personaje<select id="dbChar" data-dyn></select></label>
         </div>
         <button class="btn primary" type="button" id="dbAll">Cargar todo el personaje</button>
         <div class="parts" role="group" aria-label="Cargar solo una parte">
@@ -168,7 +172,7 @@ details.about b{color:var(--ink)}
           <button class="btn pb" type="button" data-part="red" style="--c:#a8282a">Roja</button>
           <button class="btn" type="button" data-part="img" style="grid-column:1/-1">Imagen del personaje</button>
         </div>
-        <p class="hint" id="dbHint">Carga todo el personaje o solo una parte: puedes elegir otro personaje y traer solo su habilidad roja, azul…</p>
+        <p class="hint" id="dbHint" data-dyn>Carga todo el personaje o solo una parte: puedes elegir otro personaje y traer solo su habilidad roja, azul…</p>
       </section>
 
       <section class="sec front-only">
@@ -212,7 +216,7 @@ details.about b{color:var(--ink)}
 
       <section class="sec back-only" hidden>
         <h2>Reverso</h2>
-        <label class="file" for="logoIn">Subir logo del juego<small id="logoState">PNG transparente</small>
+        <label class="file" for="logoIn">Subir logo del juego<small id="logoState" data-dyn>PNG transparente</small>
           <input type="file" id="logoIn" accept="image/*" hidden></label>
         <label class="check"><input type="checkbox" id="copyChk" checked> Mostrar © MARVEL</label>
       </section>
@@ -238,9 +242,9 @@ details.about b{color:var(--ink)}
           <button class="btn" type="button" id="exp2">Exportar frente + reverso</button>
           <label class="check"><input type="checkbox" id="bleedChk" checked> Con sangrado</label>
           <label class="check"><input type="checkbox" id="trimChk"> Ver línea de corte</label>
-          <span class="status" id="status"></span>
+          <span class="status" id="status" data-dyn></span>
         </div>
-        <div class="out" id="out"></div>
+        <div class="out" id="out" data-dyn></div>
       </div>
       <details class="panel about">
         <summary>Sobre este editor</summary>
@@ -255,14 +259,14 @@ details.about b{color:var(--ink)}
   <section class="panel sheet" aria-labelledby="sheetH">
     <div class="sheet-head">
       <h2 id="sheetH">Hoja de impresión A4</h2>
-      <span class="status" id="sheetInfo"></span>
+      <span class="status" id="sheetInfo" data-dyn></span>
     </div>
     <div class="bar">
       <button class="btn primary" type="button" id="addCard">Añadir carta a la hoja</button>
       <button class="btn" type="button" id="updCard" hidden>Guardar cambios en la hoja</button>
       <button class="btn" type="button" id="newCard">Empezar carta nueva</button>
     </div>
-    <div class="cards" id="cards"></div>
+    <div class="cards" id="cards" data-dyn></div>
     <div class="opts">
       <label class="check"><input type="checkbox" id="duplexChk" checked> Reversos espejados para imprimir a doble cara (volteo por borde largo)</label>
       <label class="check"><input type="checkbox" id="marksChk" checked> Marcas de corte</label>
@@ -271,10 +275,10 @@ details.about b{color:var(--ink)}
       <button class="btn primary" type="button" id="pdfBtn">Descargar PDF A4</button>
       <button class="btn" type="button" id="exportSheet">Guardar hoja .json</button>
       <label class="btn" for="importSheet">Cargar hoja .json<input type="file" id="importSheet" accept="application/json,.json" hidden></label>
-      <span class="status" id="pdfStatus"></span>
+      <span class="status" id="pdfStatus" data-dyn></span>
     </div>
     <p class="hint">Cada carta sale a 110 × 70 mm exactos con 1 mm de sangrado. Caben 6 por A4 (4 horizontales y 2 giradas). Imprime al 100 % o “tamaño real”, sin “ajustar a la página”; para doble cara, elige volteo por el borde largo.</p>
-    <div class="pages" id="pages"></div>
+    <div class="pages" id="pages" data-dyn></div>
   </section>
 </div>
 
@@ -282,6 +286,101 @@ details.about b{color:var(--ink)}
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
+/* ---------- language (ES / EN) ---------- */
+const EN={
+'Editor de Dashboards':'Dashboard Editor','Marvel Zombies · réplica de la plantilla de LukeS7':'Marvel Zombies · replica of LukeS7’s template',
+'Tema':'Theme','Idioma':'Language','Carta':'Card','Cara':'Side','Frente':'Front','Reverso':'Back','Modo':'Mode','Modo Zombi':'Zombie mode','Modo Héroe':'Hero mode',
+'Personaje':'Character','Nombre':'Name','Subir imagen del personaje':'Upload character image','PNG transparente, mejor cuadrada':'Transparent PNG, square works best',
+'Figura a ajustar':'Figure to adjust','Figura':'Figure','Figura grande':'Big figure','Zoom':'Zoom','Centrar':'Reset',
+'Arrastra sobre la carta para mover la imagen. Por defecto se coloca exactamente donde la pone la plantilla.':'Drag on the card to move the image. By default it sits exactly where the template places it.',
+'Base de personajes':'Character database','Fuente':'Source','Héroes':'Heroes','Zombis':'Zombies','Cargar todo el personaje':'Load the whole character',
+'Cargar solo una parte':'Load just one part','Ataque':'Attack','Azul':'Blue','Amarilla':'Yellow','Naranja':'Orange','Roja':'Red','Imagen del personaje':'Character image',
+'Carga todo el personaje o solo una parte: puedes elegir otro personaje y traer solo su habilidad roja, azul…':'Load the whole character or just one part: you can pick another character and bring only its red skill, its blue one…',
+'Tipo de ataque':'Attack type','Cuerpo a cuerpo':'Melee','A distancia':'Ranged','Nombre del ataque':'Attack name','Alcance':'Range','Dados':'Dice','Impacto':'Hit',
+'Devorar':'Devour','Título':'Title','Texto':'Text','Vida':'Health','(plantilla: hasta 5)':'(template: up to 5)','Hambre':'Hunger','Poder':'Power','(plantilla: 4)':'(template: 4)','Nivel':'Level',
+'Habilidades':'Skills','Escribe':'Type','para el símbolo de Poder. Mayúsculas automáticas en los títulos.':'for the Power symbol. Titles are capitalised automatically.',
+'Azul · título':'Blue · title','Azul · descripción':'Blue · description','Amarilla · banda':'Yellow · banner','Naranja · título':'Orange · title','Naranja · descripción':'Orange · description',
+'Roja · título':'Red · title','Roja · descripción':'Red · description','Subir logo del juego':'Upload game logo','PNG transparente':'Transparent PNG','Mostrar © MARVEL':'Show © MARVEL',
+'Logo cargado · pulsa para cambiar':'Logo loaded · click to change','Personaje guardado':'Saved character','Guardar .json':'Save .json','Cargar .json':'Load .json',
+'Guarda textos, imagen y ajustes para seguir otro día o pasarlo a otra persona.':'Saves texts, image and adjustments so you can continue another day or pass it to someone else.',
+'Vista previa de la carta':'Card preview','Exportar esta cara':'Export this side','Exportar frente + reverso':'Export front + back','Con sangrado':'With bleed','Ver línea de corte':'Show trim line',
+'Sobre este editor':'About this editor','Réplica web de la plantilla':'Web replica of the','de':'template by',
+'(BoardGameGeek), con sus mismas medidas, fuentes, capas y efectos. Uso personal y no comercial; Marvel, Marvel Zombies y Zombicide son marcas de sus titulares. La carta mide 1411×945 px con sangrado; la línea de corte está en 1299×827 px.':'(BoardGameGeek), with the same measurements, fonts, layers and effects. Personal, non-commercial use; Marvel, Marvel Zombies and Zombicide are trademarks of their owners. The card is 1411×945 px with bleed; the trim line is at 1299×827 px.',
+'Hoja de impresión A4':'A4 print sheet','Añadir carta a la hoja':'Add card to the sheet','Guardar cambios en la hoja':'Save changes to the sheet','Empezar carta nueva':'Start a new card',
+'Reversos espejados para imprimir a doble cara (volteo por borde largo)':'Mirrored backs for double-sided printing (flip on long edge)','Marcas de corte':'Crop marks',
+'Descargar PDF A4':'Download A4 PDF','Guardar hoja .json':'Save sheet .json','Cargar hoja .json':'Load sheet .json',
+'Cada carta sale a 110 × 70 mm exactos con 1 mm de sangrado. Caben 6 por A4 (4 horizontales y 2 giradas). Imprime al 100 % o “tamaño real”, sin “ajustar a la página”; para doble cara, elige volteo por el borde largo.':'Each card comes out at exactly 110 × 70 mm with 1 mm bleed. Six fit on an A4 (4 landscape and 2 rotated). Print at 100 % or “actual size”, not “fit to page”; for double-sided, choose flip on long edge.',
+'Sube la imagen del personaje':'Upload the character image','Descargar':'Download','Zombi':'Zombie','Héroe':'Hero',
+'Si “Descargar” no responde, clic derecho (o mantén pulsado) sobre la imagen → Guardar imagen.':'If “Download” does nothing, right-click (or long-press) the image → Save image.',
+'Personaje guardado (si tu navegador bloquea la descarga, usa la versión publicada en tu web).':'Character saved (if your browser blocks the download, use the version published on your site).',
+'Personaje cargado.':'Character loaded.','No se pudo leer el archivo: comprueba que sea un .json guardado con este editor.':'Couldn’t read the file: check that it’s a .json saved with this editor.',
+'No se pudo cargar la base':'Couldn’t load the database',' · con imagen':' · with image',' · hecho ✓':' · done ✓',
+'{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.':'{n} has no image in the database: upload one with “Upload character image”.',
+'Cargando la imagen de {n}…':'Loading {n}’s image…',
+'No se pudo traer la imagen de {n} desde Drive (en la vista previa de Claude no funciona; en tu web publicada sí).':'Couldn’t fetch {n}’s image from Drive (it doesn’t work in Claude’s preview; it does on your published site).',
+'Ábrela aquí':'Open it here',', guárdala y súbela con “Subir imagen del personaje”.':', save it and upload it with “Upload character image”.',
+'imagen':'image','nombre':'name','ataque':'attack','habilidad azul':'blue skill','banda amarilla':'yellow banner','habilidad naranja':'orange skill','habilidad roja':'red skill',
+'Cargado {n} ({m}) completo.':'Loaded all of {n} ({m}).',' Este zombi no trae título azul en la base: escríbelo a mano.':' This zombie has no blue title in the database: type it in by hand.',
+' Imagen cargada.':' Image loaded.','Imagen de {n} cargada.':'{n}’s image loaded.','Copiado de {n} → {p}.':'Copied from {n} → {p}.',
+'Sin nombre':'Untitled','Editar':'Edit','Quitar':'Remove',
+'{n} carta{s} · {p} hoja{ps} A4 ({pp} páginas con reversos) · {h} hueco{hs} libre{hs}':'{n} card{s} · {p} A4 sheet{ps} ({pp} pages with backs) · {h} free slot{hs}',
+'“{n}” añadida a la hoja.':'“{n}” added to the sheet.','Cambios guardados en la hoja.':'Changes saved to the sheet.',
+'Añade al menos una carta a la hoja.':'Add at least one card to the sheet.',
+'No se pudo cargar el generador de PDF: comprueba la conexión a internet y recarga la página.':'The PDF generator couldn’t load: check your internet connection and reload the page.',
+'Preparando hoja {p} de {t}: {f} {i}/{g}…':'Preparing sheet {p} of {t}: {f} {i}/{g}…','frentes':'fronts','reversos':'backs',
+'PDF listo: {p} hoja{s} ({pp} páginas).':'PDF ready: {p} sheet{s} ({pp} pages).',
+' Si no se descarga (pasa en la vista previa de Claude), ábrelo desde tu web publicada.':' If it doesn’t download (this happens in Claude’s preview), open it from your published site.',
+'Hoja {p} · frentes':'Sheet {p} · fronts','La hoja está vacía.':'The sheet is empty.',
+'{n} carta{s} añadida{s} a la hoja.':'{n} card{s} added to the sheet.',
+'No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.':'Couldn’t read the sheet: check that it’s a .json saved from this section.',
+'frente':'front','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
+};
+/* default texts of a new card, per language (swapped on language change if still untouched) */
+const DEF_TEXT={
+  es:{name:'Tu héroe',atkTitle:'Descarga',devTitle:'Devorar',devText:'Si este ataque elimina un blanco, tu nivel de Hambre se reduce a 0.',
+    blueT:'Campo de fuerza',blueD:'Una vez durante tu turno, puedes anular el siguiente ataque que recibas dentro de Alcance 1.',
+    yellowT:'+1 Acción',orangeT:'Sobrecarga',orangeD:'Una vez durante tu turno, puedes gastar 1* para realizar 1 ataque de Descarga gratuito.',
+    redT:'Último aliento',redD:'Cuando vayas a sufrir una Herida, puedes incrementar tu Hambre en su lugar.'},
+  en:{name:'Your hero',atkTitle:'Blast',devTitle:'Devour',devText:'If this attack eliminates a target, your Hunger level is reduced to 0.',
+    blueT:'Force field',blueD:'Once during your Turn, you may cancel the next attack you receive within Range 1.',
+    yellowT:'+1 Action',orangeT:'Overload',orangeD:'Once during your Turn, you may spend 1* to perform 1 free Blast Attack.',
+    redT:'Last breath',redD:'When you would suffer a Wound, you may increase your Hunger instead.'}
+};
+let LANG=(()=>{ try{ const l=localStorage.getItem('mz-lang'); if(l==='es'||l==='en') return l; }catch(e){}
+  return /^es\b/i.test(navigator.language||'es')?'es':'en'; })();
+const MISSING=new Set();
+function t(es,v){ let s=es; if(LANG==='en'){ if(es in EN) s=EN[es]; else MISSING.add(es); }
+  if(v) s=s.replace(/\{(\w+)\}/g,(m,k)=>k in v?v[k]:m); return s; }
+/* static page text: every text node / label attribute is translated from its original Spanish */
+const I18N_NODES=[];
+function collectI18n(){
+  const skip=n=>{ for(let e=n.parentElement;e;e=e.parentElement){ if(e.hasAttribute('data-dyn')||e.tagName==='SCRIPT'||e.tagName==='STYLE') return true; } return false; };
+  const w=document.createTreeWalker($('app'),NodeFilter.SHOW_TEXT); let n;
+  while((n=w.nextNode())){ const s=n.nodeValue, k=s.trim().replace(/\s+/g,' '); if(!k||/^[\d\s.*+\-–·%×]+$/.test(k)||skip(n)) continue;
+    if(n.parentElement.id==='powerH') continue;
+    I18N_NODES.push({n,lead:s.match(/^\s*/)[0],tail:s.match(/\s*$/)[0],k}); }
+  $('app').querySelectorAll('[aria-label],[alt]').forEach(e=>{ for(const a of ['aria-label','alt']) if(e.hasAttribute(a)&&e.getAttribute(a)) I18N_NODES.push({e,a,k:e.getAttribute(a)}); });
+}
+function applyStaticLang(){
+  for(const it of I18N_NODES){ const v=t(it.k); if(it.n) it.n.nodeValue=it.lead+v+it.tail; else it.e.setAttribute(it.a,v); }
+  document.documentElement.lang=LANG; document.title=t('Editor de Dashboards');
+  document.querySelectorAll('.lang [data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===LANG)));
+}
+/* text of a field in a given language: from the database entry it came from, or from the defaults */
+function fieldText(k,lang){
+  const src=S.src&&S.src[k];
+  if(src&&DBC&&DBC[src.db]&&DBC[src.db][src.i]){ const c=DBC[src.db][src.i];
+    if(src.f==='yt') return lang==='es'?(c.yt_es||'+1 ACCIÓN'):(c.yt||'+1 ACTION');
+    return lang==='es'?(c[src.f+'_es']||c[src.f]):c[src.f]; }
+  return DEF_TEXT[lang][k];
+}
+function setLang(l){
+  if(l===LANG) return; const old=LANG; LANG=l; try{ localStorage.setItem('mz-lang',l); }catch(e){}
+  for(const k of Object.keys(DEF_TEXT.es)){ const a=fieldText(k,old), b=fieldText(k,l); if(a!=null&&b!=null&&S[k]===a) S[k]=b; }
+  applyStaticLang(); fillDB(); $('dbHint').textContent=t(DB_HINT); changed(); renderCards();
+}
+const DB_HINT='Carga todo el personaje o solo una parte: puedes elegir otro personaje y traer solo su habilidad roja, azul…';
+
 const cv=$('c'), ctx=cv.getContext('2d');
 const CW=1411, CH=945, TRIM={x:56,y:59,w:1299,h:827};
 
@@ -304,14 +403,10 @@ const TRACK_RGB={zombie:[74,103,51],hero:[50,89,104]}, HEALTH_RGB=[138,53,46];
 const HSTEP=112.75;
 
 /* ---------- state ---------- */
-const DEFAULTS={face:'front',mode:'zombie',name:'Tu héroe',atype:'melee',atkTitle:'Descarga',range:'0-1',dice:'2',hit:'3+',
-  devTitle:'Devorar',devText:'Si este ataque elimina un blanco, tu nivel de Hambre se reduce a 0.',
-  health:5,power:4,
-  blueT:'Campo de fuerza',blueD:'Una vez durante tu turno, puedes anular el siguiente ataque que recibas dentro de Alcance 1.',
-  yellowT:'+1 Acción',orangeT:'Sobrecarga',orangeD:'Una vez durante tu turno, puedes gastar 1* para realizar 1 ataque de Descarga gratuito.',
-  redT:'Último aliento',redD:'Cuando vayas a sufrir una Herida, puedes incrementar tu Hambre en su lugar.',
-  copy:true,adjust:'main',fit:{front:{z:1,x:0,y:0},main:{z:1,x:0,y:0},big:{z:1,x:0,y:0}}};
-const S=JSON.parse(JSON.stringify(DEFAULTS));
+const DEFAULTS={face:'front',mode:'zombie',atype:'melee',range:'0-1',dice:'2',hit:'3+',health:5,power:4,
+  copy:true,adjust:'main',src:{},fit:{front:{z:1,x:0,y:0},main:{z:1,x:0,y:0},big:{z:1,x:0,y:0}}};
+function defaults(){ return JSON.parse(JSON.stringify(Object.assign({},DEFAULTS,DEF_TEXT[LANG]))); }
+const S=defaults();
 let art=null, artSrc=null, artId=0, logo=null, logoSrc=null;
 const IMG={};
 
@@ -537,7 +632,7 @@ function drawSkills(){
 function placeholder(box){
   ctx.save(); ctx.fillStyle='rgba(20,30,30,.35)'; ctx.font='600 30px "Barlow Condensed",sans-serif'; ctx.textAlign='center';
   const cx=Math.min(Math.max(box.x+box.s/2,300),1100), cy=Math.min(box.y+box.s/2,CH*0.55);
-  ctx.fillText('Sube la imagen del personaje',cx,cy); ctx.restore();
+  ctx.fillText(t('Sube la imagen del personaje'),cx,cy); ctx.restore();
 }
 function drawFront(){
   const m=S.mode;
@@ -590,9 +685,9 @@ function syncUI(){
   document.querySelectorAll('.back-only').forEach(e=>e.hidden=!back);
   document.querySelectorAll('.zombie-only').forEach(e=>e.hidden=back||S.mode!=='zombie');
   $('adjBack').hidden=!back;
-  $('powerH').firstChild.textContent=S.mode==='zombie'?'Hambre ':'Poder ';
+  $('powerH').firstChild.textContent=t(S.mode==='zombie'?'Hambre':'Poder')+' ';
   const f=S.fit[target()]; $('zoom').value=f.z; $('zoomLbl').textContent=Math.round(f.z*100)+'%';
-  $('logoState').textContent=logo?'Logo cargado · pulsa para cambiar':'PNG transparente';
+  $('logoState').textContent=t(logo?'Logo cargado · pulsa para cambiar':'PNG transparente');
 }
 let saveT=0;
 function persist(){clearTimeout(saveT);saveT=setTimeout(()=>{try{const o=JSON.parse(JSON.stringify(S));localStorage.setItem('mz-dash-v2',JSON.stringify(o));}catch(e){}},300);}
@@ -600,7 +695,7 @@ function changed(){syncUI();draw();persist();}
 $('form').addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.k){S[t.dataset.k]=t.value; draw(); persist(); return;}
-  if(t.type==='radio'){ S[t.name]=(t.name==='health'||t.name==='power')?+t.value:t.value; changed(); }
+  if(t.type==='radio'&&t.name){ S[t.name]=(t.name==='health'||t.name==='power')?+t.value:t.value; changed(); }
 });
 $('copyChk').addEventListener('change',e=>{S.copy=e.target.checked;changed();});
 $('zoom').addEventListener('input',e=>{S.fit[target()].z=+e.target.value;$('zoomLbl').textContent=Math.round(S.fit[target()].z*100)+'%';draw();persist();});
@@ -631,18 +726,18 @@ function snapshot(face){
     out.getContext('2d').drawImage(cv,TRIM.x,TRIM.y,TRIM.w,TRIM.h,0,0,TRIM.w,TRIM.h); }
   const url=out.toDataURL('image/png'); S.face=prev; draw(); return url;
 }
-function slug(){return (S.name||'carta').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'carta';}
+function slug(){return (S.name||t('carta')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||t('carta');}
 function showOut(items){
   const out=$('out'); out.innerHTML='';
   for(const it of items){ const fig=document.createElement('figure');
-    fig.innerHTML=`<img alt="${it.label}" src="${it.url}"><figcaption><span>${it.label}</span><a href="${it.url}" download="${it.file}">Descargar</a></figcaption>`;
+    fig.innerHTML=`<img alt="${it.label}" src="${it.url}"><figcaption><span>${it.label}</span><a href="${it.url}" download="${it.file}">${t('Descargar')}</a></figcaption>`;
     out.appendChild(fig); }
-  $('status').textContent='Si “Descargar” no responde, clic derecho (o mantén pulsado) sobre la imagen → Guardar imagen.';
+  $('status').textContent=t('Si “Descargar” no responde, clic derecho (o mantén pulsado) sobre la imagen → Guardar imagen.');
 }
-$('exp1').addEventListener('click',()=>{const f=S.face; showOut([{label:(f==='front'?'Frente':'Reverso')+' · '+(S.mode==='zombie'?'Zombi':'Héroe'),url:snapshot(f),file:`${slug()}-${S.mode}-${f==='front'?'frente':'reverso'}.png`}]);});
+$('exp1').addEventListener('click',()=>{const f=S.face; showOut([{label:t(f==='front'?'Frente':'Reverso')+' · '+t(S.mode==='zombie'?'Zombi':'Héroe'),url:snapshot(f),file:`${slug()}-${S.mode}-${t(f==='front'?'frente':'reverso')}.png`}]);});
 $('exp2').addEventListener('click',()=>{showOut([
-  {label:'Frente',url:snapshot('front'),file:`${slug()}-${S.mode}-frente.png`},
-  {label:'Reverso',url:snapshot('back'),file:`${slug()}-${S.mode}-reverso.png`}]);});
+  {label:t('Frente'),url:snapshot('front'),file:`${slug()}-${S.mode}-${t('frente')}.png`},
+  {label:t('Reverso'),url:snapshot('back'),file:`${slug()}-${S.mode}-${t('reverso')}.png`}]);});
 
 /* save / load character */
 $('saveJson').addEventListener('click',()=>{
@@ -650,57 +745,61 @@ $('saveJson').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
   const a=document.createElement('a'); a.href=url; a.download=slug()+'.json'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),4000);
-  $('status').textContent='Personaje guardado (si tu navegador bloquea la descarga, usa la versión publicada en tu web).';
+  $('status').textContent=t('Personaje guardado (si tu navegador bloquea la descarga, usa la versión publicada en tu web).');
 });
 $('loadJson').addEventListener('change',async e=>{
   const f=e.target.files[0]; if(!f) return;
-  try{ const d=JSON.parse(await f.text()); Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)),d.state||{});
+  try{ const d=JSON.parse(await f.text()); Object.assign(S,defaults(),d.state||{});
     S.fit=Object.assign(JSON.parse(JSON.stringify(DEFAULTS.fit)),(d.state||{}).fit||{});
     if(d.art){artSrc=d.art;art=await loadImg(artSrc);artId++;} if(d.logo){logoSrc=d.logo;logo=await loadImg(logoSrc);}
-    changed(); $('status').textContent='Personaje cargado.'; }
-  catch(err){ $('status').textContent='No se pudo leer el archivo: comprueba que sea un .json guardado con este editor.'; }
+    if(!S.src) S.src={}; changed(); $('status').textContent=t('Personaje cargado.'); }
+  catch(err){ $('status').textContent=t('No se pudo leer el archivo: comprueba que sea un .json guardado con este editor.'); }
 });
 
 /* ---------- character database (from Heroes_jugables / zombies_jugables) ---------- */
 let DBC=null;
 async function loadDB(){ try{ const r=await fetch('assets/personajes.json'); if(!r.ok) throw 0; DBC=await r.json(); }catch(e){ DBC=null; } fillDB(); }
 function fillDB(){
-  const sel=$('dbChar'), src=$('dbSrc').value; sel.innerHTML='';
-  if(!DBC){ sel.innerHTML='<option>No se pudo cargar la base</option>'; return; }
+  const sel=$('dbChar'), src=$('dbSrc').value, keep=sel.value; sel.innerHTML='';
+  if(!DBC){ sel.innerHTML='<option>'+t('No se pudo cargar la base')+'</option>'; return; }
   const bySet={}; DBC[src].forEach((c,i)=>{(bySet[c.set]=bySet[c.set]||[]).push([c.n,i]);});
   Object.keys(bySet).sort((a,b)=>a==='Core Box'?-1:b==='Core Box'?1:a.localeCompare(b)).forEach(set=>{
     const g=document.createElement('optgroup'); g.label=set;
-    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img?' · con imagen':'')+(c.gen?' · hecho ✓':'');g.appendChild(o);});
+    bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img?t(' · con imagen'):'')+(c.gen?t(' · hecho ✓'):'');g.appendChild(o);});
     sel.appendChild(g); });
+  if(keep&&sel.querySelector(`option[value="${keep}"]`)) sel.value=keep;
 }
 function dbPick(){ return DBC?DBC[$('dbSrc').value][+$('dbChar').value]:null; }
 async function loadDriveArt(c){
-  if(!c.img){ $('dbHint').textContent=`${c.n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.`; return false; }
-  $('dbHint').textContent=`Cargando la imagen de ${c.n}…`;
+  if(!c.img){ $('dbHint').textContent=t('{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.',{n:c.n}); return false; }
+  $('dbHint').textContent=t('Cargando la imagen de {n}…',{n:c.n});
   const src='api/img?id='+encodeURIComponent(c.img), im=await loadImg(src);
   if(im){ art=im; artSrc=src; artId++; changed(); return true; }
   const link='https://drive.google.com/thumbnail?sz=w2400&id='+encodeURIComponent(c.img);
-  $('dbHint').innerHTML=`No se pudo traer la imagen de ${c.n} desde Drive (en la vista previa de Claude no funciona; en tu web publicada sí). <a href="${link}" target="_blank" rel="noopener">Ábrela aquí</a>, guárdala y súbela con “Subir imagen del personaje”.`;
+  $('dbHint').innerHTML=t('No se pudo traer la imagen de {n} desde Drive (en la vista previa de Claude no funciona; en tu web publicada sí).',{n:c.n})+` <a href="${link}" target="_blank" rel="noopener">${t('Ábrela aquí')}</a>`+t(', guárdala y súbela con “Subir imagen del personaje”.');
   return false;
 }
 const PART_LABEL={img:'imagen',name:'nombre',atk:'ataque',blue:'habilidad azul',yellow:'banda amarilla',orange:'habilidad naranja',red:'habilidad roja'};
+document.querySelectorAll('.lang [data-lang]').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
+/* copies a part of a database character in the current language and remembers where it came from,
+   so switching language later also translates it (unless the user has edited it) */
+const PART_FIELDS={atk:{atkTitle:'atk'},blue:{blueT:'bt',blueD:'bd'},yellow:{yellowT:'yt'},orange:{orangeT:'ot',orangeD:'od'},red:{redT:'rt',redD:'rd'}};
 function applyPart(c,part){
-  if(part==='name') S.name=c.n;
-  if(part==='atk'){ S.atkTitle=c.atk; S.atype=c.type==='ranged'?'ranged':'melee'; S.range=c.r; S.dice=c.d; S.hit=c.hit; }
-  if(part==='blue'){ S.blueT=c.bt; S.blueD=c.bd; }
-  if(part==='yellow'){ S.yellowT=c.yt||'+1 ACTION'; }
-  if(part==='orange'){ S.orangeT=c.ot; S.orangeD=c.od; }
-  if(part==='red'){ S.redT=c.rt; S.redD=c.rd; }
+  if(!S.src) S.src={};
+  const ref={db:$('dbSrc').value,i:DBC?DBC[$('dbSrc').value].indexOf(c):-1};
+  if(part==='name'){ S.name=c.n; delete S.src.name; }
+  if(part==='atk'){ S.atype=c.type==='ranged'?'ranged':'melee'; S.range=c.r; S.dice=c.d; S.hit=c.hit; }
+  for(const [k,f] of Object.entries(PART_FIELDS[part]||{})){ S.src[k]={db:ref.db,i:ref.i,f}; S[k]=fieldText(k,LANG)||''; }
 }
 $('dbSrc').addEventListener('change',fillDB);
 $('dbAll').addEventListener('click',()=>{ const c=dbPick(); if(!c) return; const src=$('dbSrc').value;
   ['name','atk','blue','yellow','orange','red'].forEach(p=>applyPart(c,p)); S.mode=src;
   if(src==='hero'&&c.hp){ const h=parseInt(c.hp,10); if(h>=1&&h<=8) S.health=h; }
-  changed(); const msg=`Cargado ${c.n} (${src==='hero'?'Héroe':'Zombi'}) completo.`+(c.bt?'':' Este zombi no trae título azul en la base: escríbelo a mano.');
-  $('dbHint').textContent=msg; if(c.img){ loadDriveArt(c).then(ok=>{ if(ok) $('dbHint').textContent=msg+' Imagen cargada.'; }); } });
+  changed(); const msg=t('Cargado {n} ({m}) completo.',{n:c.n,m:t(src==='hero'?'Héroe':'Zombi')})+(c.bt?'':t(' Este zombi no trae título azul en la base: escríbelo a mano.'));
+  $('dbHint').textContent=msg; if(c.img){ loadDriveArt(c).then(ok=>{ if(ok) $('dbHint').textContent=msg+t(' Imagen cargada.'); }); } });
 document.querySelectorAll('.parts [data-part]').forEach(b=>b.addEventListener('click',async()=>{ const c=dbPick(); if(!c) return;
-  if(b.dataset.part==='img'){ if(await loadDriveArt(c)) $('dbHint').textContent=`Imagen de ${c.n} cargada.`; return; }
-  applyPart(c,b.dataset.part); changed(); $('dbHint').textContent=`Copiado de ${c.n} → ${PART_LABEL[b.dataset.part]}.`; }));
+  if(b.dataset.part==='img'){ if(await loadDriveArt(c)) $('dbHint').textContent=t('Imagen de {n} cargada.',{n:c.n}); return; }
+  applyPart(c,b.dataset.part); changed(); $('dbHint').textContent=t('Copiado de {n} → {p}.',{n:c.n,p:t(PART_LABEL[b.dataset.part])}); }));
 
 /* ---------- print sheet (A4) ---------- */
 const MM=300/25.4;                          /* template is 300 ppi: 1299×827 px = 110×70 mm */
@@ -732,30 +831,31 @@ function currentCard(id){ const st=JSON.parse(JSON.stringify(S)); st.face='front
 function renderCards(){
   const box=$('cards'); box.innerHTML='';
   for(const c of CARDS){ const d=document.createElement('div'); d.className='ci'+(c.id===editingId?' editing':'');
-    const nm=(c.state.name||'Sin nombre').toUpperCase(), md=c.state.mode;
-    d.innerHTML=`<img alt="" src="${c.thumb}"><div class="meta"><b title="${nm}">${nm}</b><span class="tag ${md}">${md==='zombie'?'Zombi':'Héroe'}</span></div>
-      <div class="acts"><button class="btn" type="button" data-a="edit">Editar</button><button class="btn" type="button" data-a="del">Quitar</button></div>`;
+    const nm=(c.state.name||t('Sin nombre')).toUpperCase(), md=c.state.mode;
+    d.innerHTML=`<img alt="" src="${c.thumb}"><div class="meta"><b title="${nm}">${nm}</b><span class="tag ${md}">${t(md==='zombie'?'Zombi':'Héroe')}</span></div>
+      <div class="acts"><button class="btn" type="button" data-a="edit">${t('Editar')}</button><button class="btn" type="button" data-a="del">${t('Quitar')}</button></div>`;
     d.querySelector('[data-a=edit]').onclick=()=>editCard(c.id); d.querySelector('[data-a=del]').onclick=()=>removeCard(c.id);
     box.appendChild(d); }
   const n=CARDS.length, pages=Math.ceil(n/PER);
-  $('sheetInfo').textContent=n?`${n} carta${n>1?'s':''} · ${pages} hoja${pages>1?'s':''} A4 (${pages*2} páginas con reversos) · ${PER*pages-n} hueco${PER*pages-n===1?'':'s'} libre${PER*pages-n===1?'':'s'}`:'';
+  const free=PER*pages-n;
+  $('sheetInfo').textContent=n?t('{n} carta{s} · {p} hoja{ps} A4 ({pp} páginas con reversos) · {h} hueco{hs} libre{hs}',{n,s:n>1?'s':'',p:pages,ps:pages>1?'s':'',pp:pages*2,h:free,hs:free===1?'':'s'}):'';
   $('updCard').hidden=!editingId; renderPages();
 }
 async function editCard(id){ const c=CARDS.find(x=>x.id===id); if(!c) return;
-  Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)),JSON.parse(JSON.stringify(c.state)));
+  Object.assign(S,defaults(),JSON.parse(JSON.stringify(c.state)));
   art=c.art?await loadImg(c.art):null; artSrc=c.art; artId++; if(c.logo){logo=await loadImg(c.logo);logoSrc=c.logo;}
   editingId=id; changed(); renderCards(); window.scrollTo({top:0,behavior:'smooth'}); }
 $('addCard').addEventListener('click',async()=>{ const c=currentCard(); editingId=null; await storeCard(c);
-  $('pdfStatus').textContent=`“${(S.name||'').toUpperCase()}” añadida a la hoja.`; });
+  $('pdfStatus').textContent=t('“{n}” añadida a la hoja.',{n:(S.name||'').toUpperCase()}); });
 $('updCard').addEventListener('click',async()=>{ if(!editingId) return; const old=CARDS.find(x=>x.id===editingId); const c=currentCard(editingId); if(old) c.created=old.created;
-  await storeCard(c); $('pdfStatus').textContent='Cambios guardados en la hoja.'; });
-$('newCard').addEventListener('click',()=>{ const keepLogo=logo, keepLogoSrc=logoSrc; Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)));
+  await storeCard(c); $('pdfStatus').textContent=t('Cambios guardados en la hoja.'); });
+$('newCard').addEventListener('click',()=>{ const keepLogo=logo, keepLogoSrc=logoSrc; Object.assign(S,defaults());
   art=null; artSrc=null; artId++; logo=keepLogo; logoSrc=keepLogoSrc; editingId=null; changed(); renderCards(); });
 
 /* render any saved card without touching the editor */
 async function withCard(card,fn){
   const keep={S:JSON.parse(JSON.stringify(S)),art,artSrc,artId,logo,logoSrc};
-  Object.assign(S,JSON.parse(JSON.stringify(DEFAULTS)),JSON.parse(JSON.stringify(card.state)));
+  Object.assign(S,defaults(),JSON.parse(JSON.stringify(card.state)));
   art=card.art?await loadImg(card.art):null; artId='pdf-'+card.id; if(card.logo) logo=await loadImg(card.logo);
   try{ return await fn(); }
   finally{ Object.keys(S).forEach(k=>delete S[k]); Object.assign(S,keep.S); art=keep.art; artSrc=keep.artSrc; artId=keep.artId; logo=keep.logo; logoSrc=keep.logoSrc; draw(); }
@@ -777,8 +877,8 @@ function cropMarks(doc,slots){
   }
 }
 async function buildPdf(asBlob){
-  if(!CARDS.length){ $('pdfStatus').textContent='Añade al menos una carta a la hoja.'; return null; }
-  if(!window.jspdf){ $('pdfStatus').textContent='No se pudo cargar el generador de PDF: comprueba la conexión a internet y recarga la página.'; return null; }
+  if(!CARDS.length){ $('pdfStatus').textContent=t('Añade al menos una carta a la hoja.'); return null; }
+  if(!window.jspdf){ $('pdfStatus').textContent=t('No se pudo cargar el generador de PDF: comprueba la conexión a internet y recarga la página.'); return null; }
   const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
   const slots=slotsA4(), duplex=$('duplexChk').checked, marks=$('marksChk').checked, pages=Math.ceil(CARDS.length/PER);
   for(let p=0;p<pages;p++){
@@ -787,17 +887,17 @@ async function buildPdf(asBlob){
       if(p>0||face==='back') doc.addPage();
       const sl=face==='front'?used:used.map(s=>backSlot(s,duplex));
       for(let i=0;i<group.length;i++){
-        $('pdfStatus').textContent=`Preparando hoja ${p+1} de ${pages}: ${face==='front'?'frentes':'reversos'} ${i+1}/${group.length}…`;
+        $('pdfStatus').textContent=t('Preparando hoja {p} de {t}: {f} {i}/{g}…',{p:p+1,t:pages,f:t(face==='front'?'frentes':'reversos'),i:i+1,g:group.length});
         const s=sl[i], img=await withCard(group[i],()=>faceImage(face,s.rot));
         doc.addImage(img,'JPEG',s.x-BLEED,s.y-BLEED,s.w+2*BLEED,s.h+2*BLEED,undefined,'FAST');
       }
       if(marks) cropMarks(doc,sl);
     }
   }
-  $('pdfStatus').textContent=`PDF listo: ${pages} hoja${pages>1?'s':''} (${pages*2} páginas).`;
+  $('pdfStatus').textContent=t('PDF listo: {p} hoja{s} ({pp} páginas).',{p:pages,s:pages>1?'s':'',pp:pages*2});
   if(asBlob) return doc.output('blob');
-  doc.save(`cartas-marvel-zombies-${CARDS.length}.pdf`);
-  $('pdfStatus').textContent+=' Si no se descarga (pasa en la vista previa de Claude), ábrelo desde tu web publicada.'; return null;
+  doc.save(`${t('cartas-marvel-zombies')}-${CARDS.length}.pdf`);
+  $('pdfStatus').textContent+=t(' Si no se descarga (pasa en la vista previa de Claude), ábrelo desde tu web publicada.'); return null;
 }
 $('pdfBtn').addEventListener('click',()=>buildPdf(false));
 function renderPages(){
@@ -808,16 +908,16 @@ function renderPages(){
     CARDS.slice(p*PER,(p+1)*PER).forEach((cd,i)=>{ const s=slots[i], im=new Image(); im.onload=()=>{
       g.save(); if(s.rot){ g.translate(s.x+s.w/2,s.y+s.h/2); g.rotate(Math.PI/2); g.drawImage(im,-s.h/2,-s.w/2,s.h,s.w); } else g.drawImage(im,s.x,s.y,s.w,s.h); g.restore(); }; im.src=cd.thumb; });
     slots.slice(CARDS.slice(p*PER,(p+1)*PER).length).forEach(s=>{ g.setLineDash([2,2]); g.strokeStyle='#bbb'; g.lineWidth=0.4; g.strokeRect(s.x,s.y,s.w,s.h); });
-    fig.appendChild(c); const cap=document.createElement('figcaption'); cap.textContent=`Hoja ${p+1} · frentes`; fig.appendChild(cap); box.appendChild(fig);
+    fig.appendChild(c); const cap=document.createElement('figcaption'); cap.textContent=t('Hoja {p} · frentes',{p:p+1}); fig.appendChild(cap); box.appendChild(fig);
   }
 }
 function download(blob,name){ const url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000); }
-$('exportSheet').addEventListener('click',()=>{ if(!CARDS.length){$('pdfStatus').textContent='La hoja está vacía.';return;}
-  download(new Blob([JSON.stringify({v:2,cards:CARDS})],{type:'application/json'}),`hoja-cartas-${CARDS.length}.json`); });
+$('exportSheet').addEventListener('click',()=>{ if(!CARDS.length){$('pdfStatus').textContent=t('La hoja está vacía.');return;}
+  download(new Blob([JSON.stringify({v:2,cards:CARDS})],{type:'application/json'}),`${t('hoja-cartas')}-${CARDS.length}.json`); });
 $('importSheet').addEventListener('change',async e=>{ const f=e.target.files[0]; if(!f) return;
   try{ const d=JSON.parse(await f.text()); const list=d.cards||[]; for(const c of list){ c.id='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); c.created=Date.now()+Math.random(); await storeCard(c);}
-    $('pdfStatus').textContent=`${list.length} carta${list.length===1?'':'s'} añadida${list.length===1?'':'s'} a la hoja.`; }
-  catch(err){ $('pdfStatus').textContent='No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.'; }
+    $('pdfStatus').textContent=t('{n} carta{s} añadida{s} a la hoja.',{n:list.length,s:list.length===1?'':'s'}); }
+  catch(err){ $('pdfStatus').textContent=t('No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.'); }
   e.target.value=''; });
 
 /* theme */
@@ -826,7 +926,8 @@ $('themeBtn').addEventListener('click',()=>{const r=document.documentElement,c=r
 
 /* boot */
 (async function(){
-  try{ const saved=JSON.parse(localStorage.getItem('mz-dash-v2')||'null'); if(saved){Object.assign(S,saved); S.fit=Object.assign(JSON.parse(JSON.stringify(DEFAULTS.fit)),saved.fit||{});} }catch(e){}
+  try{ const saved=JSON.parse(localStorage.getItem('mz-dash-v2')||'null'); if(saved){Object.assign(S,saved); S.fit=Object.assign(JSON.parse(JSON.stringify(DEFAULTS.fit)),saved.fit||{}); if(!S.src) S.src={};} }catch(e){}
+  collectI18n(); applyStaticLang(); $('dbHint').textContent=t(DB_HINT);
   syncUI();
   const imgs=await Promise.all(FILES.map(n=>loadImg('assets/'+n+'.png').then(i=>{IMG[n]=i;})));
   const dl=await loadImg('assets/logo_default.png'); if(dl&&!logo){logo=dl;}
@@ -836,7 +937,7 @@ $('themeBtn').addEventListener('click',()=>{const r=document.documentElement,c=r
   $('dbSrc').value=S.mode; await loadDB();
   window.__ready=true;
 })();
-window.__S=S; window.__setArt=async src=>{artSrc=src;art=await loadImg(src);artId++;draw();};
+window.__S=S; window.__missing=MISSING; window.__setLang=setLang; window.__setArt=async src=>{artSrc=src;art=await loadImg(src);artId++;draw();};
 </script>
 
 </body>
