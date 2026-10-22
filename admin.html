@@ -182,6 +182,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
               <div class="big" id="eImg">Sin imagen</div>
               <div style="display:grid;gap:8px;flex:1;min-width:180px">
                 <label class="btn" for="eImgIn">Subir imagen<input type="file" id="eImgIn" accept="image/*" hidden></label>
+                <label class="check"><input type="checkbox" id="eBgChk" checked> Quitar fondo blanco</label>
                 <button class="btn danger" type="button" id="eImgDel">Quitar imagen subida</button>
                 <label class="f">ID de Google Drive<input type="text" data-f="img" placeholder="Opcional"></label>
                 <label class="f">URL de imagen (wiki)<input type="url" data-f="url" placeholder="https://static.wikia.nocookie.net/…"></label>
@@ -408,8 +409,36 @@ async function encode(im,maxSide,type,forceType){
     s*=0.8; }
   throw new Error('La imagen es demasiado grande incluso reducida.');
 }
+/* removes a white / near-white background connected to the image border (flood fill), with soft,
+   colour-cleaned edges; white parts inside the figure are kept. Returns a canvas, or null if there was nothing to remove. */
+function removeWhiteBg(src,tol){
+  tol=tol||28; const W=src.naturalWidth||src.width, H=src.naturalHeight||src.height;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,0,0,W,H);
+  const id=g.getImageData(0,0,W,H), d=id.data, N=W*H, mask=new Uint8Array(N), q=new Int32Array(N); let qh=0,qt=0;
+  const bg=p=>{ const i=p*4, a=d[i+3]; if(a<16) return true; const r=d[i],gg=d[i+1],b=d[i+2], mn=Math.min(r,gg,b), mx=Math.max(r,gg,b); return mn>=255-tol&&mx-mn<=26; };
+  let opaqueBorder=0, borderN=0;
+  const seed=p=>{ borderN++; if(d[p*4+3]>=250) opaqueBorder++; if(!mask[p]&&bg(p)){ mask[p]=1; q[qt++]=p; } };
+  for(let x=0;x<W;x++){ seed(x); seed((H-1)*W+x); } for(let y=1;y<H-1;y++){ seed(y*W); seed(y*W+W-1); }
+  if(opaqueBorder<borderN*0.5) return null;               /* already transparent around the edges */
+  while(qh<qt){ const p=q[qh++], x=p%W;
+    if(x>0&&!mask[p-1]&&bg(p-1)){mask[p-1]=1;q[qt++]=p-1;} if(x<W-1&&!mask[p+1]&&bg(p+1)){mask[p+1]=1;q[qt++]=p+1;}
+    if(p>=W&&!mask[p-W]&&bg(p-W)){mask[p-W]=1;q[qt++]=p-W;} if(p<N-W&&!mask[p+W]&&bg(p+W)){mask[p+W]=1;q[qt++]=p+W;} }
+  if(qt<N*0.01) return null;
+  for(let p=0;p<N;p++) if(mask[p]) d[p*4+3]=0;
+  /* soft edge: pixels touching the background fade with their whiteness and lose the white fringe */
+  const lo=255-tol*3;
+  for(let pass=0;pass<2;pass++){ const ring=[];
+    for(let p=0;p<N;p++){ if(mask[p]) continue; const x=p%W;
+      if((x>0&&mask[p-1])||(x<W-1&&mask[p+1])||(p>=W&&mask[p-W])||(p<N-W&&mask[p+W])) ring.push(p); }
+    for(const p of ring){ const i=p*4, mn=Math.min(d[i],d[i+1],d[i+2]); mask[p]=2;
+      if(mn<=lo) continue; const a=Math.max(0.15,1-(mn-lo)/(255-lo));
+      for(let k=0;k<3;k++) d[i+k]=Math.max(0,Math.min(255,(d[i+k]-255*(1-a))/a));
+      d[i+3]=Math.round(d[i+3]*a); }
+  }
+  g.putImageData(id,0,0); return c;
+}
 $('eImgIn').addEventListener('change',async e=>{ const f=e.target.files[0], c=cur(); e.target.value=''; if(!f||!c) return;
-  try{ const im=await readAsImage(f), r=await encode(im,1600,'image/webp');
+  try{ let im=await readAsImage(f); if($('eBgChk').checked){ const cut=removeWhiteBg(im); if(cut) im=cut; } const r=await encode(im,1600,'image/webp');
     const path=`assets/pj/${SEL.src}-${slug(c.n)}-${Date.now().toString(36)}.${r.ext}`;
     if(c.file&&IMGS.has(c.file)) IMGS.delete(c.file); else if(c.file) REMOVE.add(c.file);
     IMGS.set(path,{data:r.b64,url:r.url}); c.file=path; changedAll(); renderEditMeta(); }

@@ -143,6 +143,7 @@ details.about b{color:var(--ink)}
         <label class="f">Nombre<input type="text" id="name" data-k="name" placeholder="Nombre del personaje" maxlength="26"></label>
         <label class="file" for="artIn">Subir imagen del personaje<small>PNG transparente, mejor cuadrada</small>
           <input type="file" id="artIn" accept="image/*" hidden></label>
+        <label class="check"><input type="checkbox" id="bgChk" checked> Quitar fondo blanco al subir</label>
         <div id="adjBack" hidden>
           <div class="seg" role="radiogroup" aria-label="Figura a ajustar">
             <label><input type="radio" name="adjust" value="main" checked><span>Figura</span></label>
@@ -335,7 +336,7 @@ const EN={
 'No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.':'Couldn’t read the sheet: check that it’s a .json saved from this section.',
 'frente':'front','Nombre del personaje':'Character name','Ej.: RAYOS DE HIELO':'E.g. ICE BEAMS','Título de la habilidad azul':'Blue skill title','Título de la habilidad naranja':'Orange skill title','Título de la habilidad roja':'Red skill title',
 'Texto de la habilidad azul. Usa * para el símbolo de Poder.':'Blue skill text. Use * for the Power symbol.','Texto de la habilidad naranja. Usa * para el símbolo de Poder.':'Orange skill text. Use * for the Power symbol.','Texto de la habilidad roja. Usa * para el símbolo de Poder.':'Red skill text. Use * for the Power symbol.',
-'— Elige un personaje —':'— Choose a character —','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
+'— Elige un personaje —':'— Choose a character —','Quitar fondo blanco al subir':'Remove white background on upload','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
 };
 /* default texts of a new card, per language (swapped on language change if still untouched) */
 const DEF_TEXT={
@@ -699,7 +700,37 @@ $('copyChk').addEventListener('change',e=>{S.copy=e.target.checked;changed();});
 $('zoom').addEventListener('input',e=>{S.fit[target()].z=+e.target.value;$('zoomLbl').textContent=Math.round(S.fit[target()].z*100)+'%';draw();persist();});
 $('resetFit').addEventListener('click',()=>{S.fit[target()]={z:1,x:0,y:0};changed();});
 function readFile(file){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file);});}
-$('artIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;artSrc=await readFile(f);art=await loadImg(artSrc);artId++;changed();});
+/* removes a white / near-white background connected to the image border (flood fill), with soft,
+   colour-cleaned edges; white parts inside the figure are kept. Returns a canvas, or null if there was nothing to remove. */
+function removeWhiteBg(src,tol){
+  tol=tol||28; const W=src.naturalWidth||src.width, H=src.naturalHeight||src.height;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,0,0,W,H);
+  const id=g.getImageData(0,0,W,H), d=id.data, N=W*H, mask=new Uint8Array(N), q=new Int32Array(N); let qh=0,qt=0;
+  const bg=p=>{ const i=p*4, a=d[i+3]; if(a<16) return true; const r=d[i],gg=d[i+1],b=d[i+2], mn=Math.min(r,gg,b), mx=Math.max(r,gg,b); return mn>=255-tol&&mx-mn<=26; };
+  let opaqueBorder=0, borderN=0;
+  const seed=p=>{ borderN++; if(d[p*4+3]>=250) opaqueBorder++; if(!mask[p]&&bg(p)){ mask[p]=1; q[qt++]=p; } };
+  for(let x=0;x<W;x++){ seed(x); seed((H-1)*W+x); } for(let y=1;y<H-1;y++){ seed(y*W); seed(y*W+W-1); }
+  if(opaqueBorder<borderN*0.5) return null;               /* already transparent around the edges */
+  while(qh<qt){ const p=q[qh++], x=p%W;
+    if(x>0&&!mask[p-1]&&bg(p-1)){mask[p-1]=1;q[qt++]=p-1;} if(x<W-1&&!mask[p+1]&&bg(p+1)){mask[p+1]=1;q[qt++]=p+1;}
+    if(p>=W&&!mask[p-W]&&bg(p-W)){mask[p-W]=1;q[qt++]=p-W;} if(p<N-W&&!mask[p+W]&&bg(p+W)){mask[p+W]=1;q[qt++]=p+W;} }
+  if(qt<N*0.01) return null;
+  for(let p=0;p<N;p++) if(mask[p]) d[p*4+3]=0;
+  /* soft edge: pixels touching the background fade with their whiteness and lose the white fringe */
+  const lo=255-tol*3;
+  for(let pass=0;pass<2;pass++){ const ring=[];
+    for(let p=0;p<N;p++){ if(mask[p]) continue; const x=p%W;
+      if((x>0&&mask[p-1])||(x<W-1&&mask[p+1])||(p>=W&&mask[p-W])||(p<N-W&&mask[p+W])) ring.push(p); }
+    for(const p of ring){ const i=p*4, mn=Math.min(d[i],d[i+1],d[i+2]); mask[p]=2;
+      if(mn<=lo) continue; const a=Math.max(0.15,1-(mn-lo)/(255-lo));
+      for(let k=0;k<3;k++) d[i+k]=Math.max(0,Math.min(255,(d[i+k]-255*(1-a))/a));
+      d[i+3]=Math.round(d[i+3]*a); }
+  }
+  g.putImageData(id,0,0); return c;
+}
+$('artIn').addEventListener('change',async e=>{const f=e.target.files[0]; e.target.value=''; if(!f)return; let src=await readFile(f), im=await loadImg(src); if(!im) return;
+  if($('bgChk').checked){ const cut=removeWhiteBg(im); if(cut){ src=cut.toDataURL('image/png'); im=await loadImg(src); } }
+  artSrc=src; art=im; artId++; changed();});
 $('logoIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;logoSrc=await readFile(f);logo=await loadImg(logoSrc);changed();});
 
 /* drag to move the selected figure */
