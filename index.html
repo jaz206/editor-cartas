@@ -140,7 +140,7 @@ details.about b{color:var(--ink)}
 
       <section class="sec">
         <h2>Personaje</h2>
-        <label class="f">Nombre<input type="text" id="name" data-k="name" maxlength="26"></label>
+        <label class="f">Nombre<input type="text" id="name" data-k="name" placeholder="Nombre del personaje" maxlength="26"></label>
         <label class="file" for="artIn">Subir imagen del personaje<small>PNG transparente, mejor cuadrada</small>
           <input type="file" id="artIn" accept="image/*" hidden></label>
         <div id="adjBack" hidden>
@@ -181,11 +181,11 @@ details.about b{color:var(--ink)}
           <label><input type="radio" name="atype" value="melee" checked><span>Cuerpo a cuerpo</span></label>
           <label><input type="radio" name="atype" value="ranged"><span>A distancia</span></label>
         </div>
-        <label class="f">Nombre del ataque<input type="text" data-k="atkTitle" maxlength="30"></label>
+        <label class="f">Nombre del ataque<input type="text" data-k="atkTitle" placeholder="Ej.: RAYOS DE HIELO" maxlength="30"></label>
         <div class="row">
-          <label class="f">Alcance<input type="text" data-k="range" maxlength="4"></label>
-          <label class="f">Dados<input type="text" data-k="dice" maxlength="3"></label>
-          <label class="f">Impacto<input type="text" data-k="hit" maxlength="3"></label>
+          <label class="f">Alcance<input type="text" data-k="range" placeholder="0-1" maxlength="4"></label>
+          <label class="f">Dados<input type="text" data-k="dice" placeholder="2" maxlength="3"></label>
+          <label class="f">Impacto<input type="text" data-k="hit" placeholder="3+" maxlength="3"></label>
         </div>
       </section>
 
@@ -205,13 +205,13 @@ details.about b{color:var(--ink)}
       <section class="sec front-only">
         <h2>Habilidades</h2>
         <p class="hint">Escribe <b>*</b> para el símbolo de Poder. Mayúsculas automáticas en los títulos.</p>
-        <label class="f"><span><i class="sw" style="background:#4f97a6"></i>Azul · título</span><input type="text" data-k="blueT" maxlength="30"></label>
-        <textarea data-k="blueD" aria-label="Azul · descripción"></textarea>
+        <label class="f"><span><i class="sw" style="background:#4f97a6"></i>Azul · título</span><input type="text" data-k="blueT" placeholder="Título de la habilidad azul" maxlength="30"></label>
+        <textarea data-k="blueD" placeholder="Texto de la habilidad azul. Usa * para el símbolo de Poder." aria-label="Azul · descripción"></textarea>
         <label class="f"><span><i class="sw" style="background:#e0a52b"></i>Amarilla · banda</span><input type="text" data-k="yellowT" maxlength="30"></label>
-        <label class="f"><span><i class="sw" style="background:#d2622f"></i>Naranja · título</span><input type="text" data-k="orangeT" maxlength="30"></label>
-        <textarea data-k="orangeD" aria-label="Naranja · descripción"></textarea>
-        <label class="f"><span><i class="sw" style="background:#a8282a"></i>Roja · título</span><input type="text" data-k="redT" maxlength="30"></label>
-        <textarea data-k="redD" aria-label="Roja · descripción"></textarea>
+        <label class="f"><span><i class="sw" style="background:#d2622f"></i>Naranja · título</span><input type="text" data-k="orangeT" placeholder="Título de la habilidad naranja" maxlength="30"></label>
+        <textarea data-k="orangeD" placeholder="Texto de la habilidad naranja. Usa * para el símbolo de Poder." aria-label="Naranja · descripción"></textarea>
+        <label class="f"><span><i class="sw" style="background:#a8282a"></i>Roja · título</span><input type="text" data-k="redT" placeholder="Título de la habilidad roja" maxlength="30"></label>
+        <textarea data-k="redD" placeholder="Texto de la habilidad roja. Usa * para el símbolo de Poder." aria-label="Roja · descripción"></textarea>
       </section>
 
       <section class="sec back-only" hidden>
@@ -333,18 +333,16 @@ const EN={
 'Hoja {p} · frentes':'Sheet {p} · fronts','La hoja está vacía.':'The sheet is empty.',
 '{n} carta{s} añadida{s} a la hoja.':'{n} card{s} added to the sheet.',
 'No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.':'Couldn’t read the sheet: check that it’s a .json saved from this section.',
-'frente':'front','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
+'frente':'front','Nombre del personaje':'Character name','Ej.: RAYOS DE HIELO':'E.g. ICE BEAMS','Título de la habilidad azul':'Blue skill title','Título de la habilidad naranja':'Orange skill title','Título de la habilidad roja':'Red skill title',
+'Texto de la habilidad azul. Usa * para el símbolo de Poder.':'Blue skill text. Use * for the Power symbol.','Texto de la habilidad naranja. Usa * para el símbolo de Poder.':'Orange skill text. Use * for the Power symbol.','Texto de la habilidad roja. Usa * para el símbolo de Poder.':'Red skill text. Use * for the Power symbol.',
+'— Elige un personaje —':'— Choose a character —','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
 };
 /* default texts of a new card, per language (swapped on language change if still untouched) */
 const DEF_TEXT={
-  es:{name:'Tu héroe',atkTitle:'Descarga',devTitle:'Devorar',devText:'Si este ataque elimina un blanco, tu nivel de Hambre se reduce a 0.',
-    blueT:'Campo de fuerza',blueD:'Una vez durante tu turno, puedes anular el siguiente ataque que recibas dentro de Alcance 1.',
-    yellowT:'+1 Acción',orangeT:'Sobrecarga',orangeD:'Una vez durante tu turno, puedes gastar 1* para realizar 1 ataque de Descarga gratuito.',
-    redT:'Último aliento',redD:'Cuando vayas a sufrir una Herida, puedes incrementar tu Hambre en su lugar.'},
-  en:{name:'Your hero',atkTitle:'Blast',devTitle:'Devour',devText:'If this attack eliminates a target, your Hunger level is reduced to 0.',
-    blueT:'Force field',blueD:'Once during your Turn, you may cancel the next attack you receive within Range 1.',
-    yellowT:'+1 Action',orangeT:'Overload',orangeD:'Once during your Turn, you may spend 1* to perform 1 free Blast Attack.',
-    redT:'Last breath',redD:'When you would suffer a Wound, you may increase your Hunger instead.'}
+  es:{name:'',atkTitle:'',devTitle:'Devorar',devText:'Si este ataque elimina un blanco, tu nivel de Hambre se reduce a 0.',
+    blueT:'',blueD:'',yellowT:'+1 Acción',orangeT:'',orangeD:'',redT:'',redD:''},
+  en:{name:'',atkTitle:'',devTitle:'Devour',devText:'If this attack eliminates a target, your Hunger level is reduced to 0.',
+    blueT:'',blueD:'',yellowT:'+1 Action',orangeT:'',orangeD:'',redT:'',redD:''}
 };
 let LANG=(()=>{ try{ const l=localStorage.getItem('mz-lang'); if(l==='es'||l==='en') return l; }catch(e){}
   return /^es\b/i.test(navigator.language||'es')?'es':'en'; })();
@@ -359,7 +357,7 @@ function collectI18n(){
   while((n=w.nextNode())){ const s=n.nodeValue, k=s.trim().replace(/\s+/g,' '); if(!k||/^[\d\s.*+\-–·%×]+$/.test(k)||skip(n)) continue;
     if(n.parentElement.id==='powerH') continue;
     I18N_NODES.push({n,lead:s.match(/^\s*/)[0],tail:s.match(/\s*$/)[0],k}); }
-  $('app').querySelectorAll('[aria-label],[alt]').forEach(e=>{ for(const a of ['aria-label','alt']) if(e.hasAttribute(a)&&e.getAttribute(a)) I18N_NODES.push({e,a,k:e.getAttribute(a)}); });
+  $('app').querySelectorAll('[aria-label],[alt],[placeholder]').forEach(e=>{ for(const a of ['aria-label','alt','placeholder']) if(e.hasAttribute(a)&&e.getAttribute(a)) I18N_NODES.push({e,a,k:e.getAttribute(a)}); });
 }
 function applyStaticLang(){
   for(const it of I18N_NODES){ const v=t(it.k); if(it.n) it.n.nodeValue=it.lead+v+it.tail; else it.e.setAttribute(it.a,v); }
@@ -403,7 +401,7 @@ const TRACK_RGB={zombie:[74,103,51],hero:[50,89,104]}, HEALTH_RGB=[138,53,46];
 const HSTEP=112.75;
 
 /* ---------- state ---------- */
-const DEFAULTS={face:'front',mode:'zombie',atype:'melee',range:'0-1',dice:'2',hit:'3+',health:5,power:4,
+const DEFAULTS={face:'front',mode:'zombie',atype:'melee',range:'',dice:'',hit:'',health:5,power:4,
   copy:true,adjust:'main',src:{},fit:{front:{z:1,x:0,y:0},main:{z:1,x:0,y:0},big:{z:1,x:0,y:0}}};
 function defaults(){ return JSON.parse(JSON.stringify(Object.assign({},DEFAULTS,DEF_TEXT[LANG]))); }
 const S=defaults();
@@ -637,7 +635,7 @@ function placeholder(box){
 function drawFront(){
   const m=S.mode;
   ctx.drawImage(IMG['front_bg_'+m],0,0);
-  if(art) drawFit(ctx,art,BOX.front,S.fit.front); else placeholder({x:212,y:91,s:720});
+  if(art) drawFit(ctx,art,BOX.front,S.fit.front); else placeholder({x:212,y:91,s:980});
   ctx.drawImage(IMG['frame_'+m],0,0);
   if(m==='zombie') drawDevour();
   drawAttack(m);
@@ -690,7 +688,7 @@ function syncUI(){
   $('logoState').textContent=t(logo?'Logo cargado · pulsa para cambiar':'PNG transparente');
 }
 let saveT=0;
-function persist(){clearTimeout(saveT);saveT=setTimeout(()=>{try{const o=JSON.parse(JSON.stringify(S));localStorage.setItem('mz-dash-v2',JSON.stringify(o));}catch(e){}},300);}
+function persist(){}
 function changed(){syncUI();draw();persist();}
 $('form').addEventListener('input',e=>{
   const t=e.target;
@@ -767,9 +765,10 @@ function fillDB(){
     const g=document.createElement('optgroup'); g.label=set;
     bySet[set].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,i])=>{const c=DBC[src][i],o=document.createElement('option');o.value=i;o.textContent=n+(c.img?t(' · con imagen'):'')+(c.gen?t(' · hecho ✓'):'');g.appendChild(o);});
     sel.appendChild(g); });
-  if(keep&&sel.querySelector(`option[value="${keep}"]`)) sel.value=keep;
+  const ph=document.createElement('option'); ph.value=''; ph.textContent=t('— Elige un personaje —'); sel.prepend(ph);
+  sel.value=keep&&sel.querySelector(`option[value="${keep}"]`)?keep:'';
 }
-function dbPick(){ return DBC?DBC[$('dbSrc').value][+$('dbChar').value]:null; }
+function dbPick(){ const v=$('dbChar').value; if(!DBC||v===''){ $('dbHint').textContent=t('Primero elige un personaje en la lista.'); return null; } return DBC[$('dbSrc').value][+v]; }
 async function loadDriveArt(c){
   if(!c.img){ $('dbHint').textContent=t('{n} no tiene imagen en la base: súbela con “Subir imagen del personaje”.',{n:c.n}); return false; }
   $('dbHint').textContent=t('Cargando la imagen de {n}…',{n:c.n});
@@ -846,7 +845,7 @@ async function editCard(id){ const c=CARDS.find(x=>x.id===id); if(!c) return;
   art=c.art?await loadImg(c.art):null; artSrc=c.art; artId++; if(c.logo){logo=await loadImg(c.logo);logoSrc=c.logo;}
   editingId=id; changed(); renderCards(); window.scrollTo({top:0,behavior:'smooth'}); }
 $('addCard').addEventListener('click',async()=>{ const c=currentCard(); editingId=null; await storeCard(c);
-  $('pdfStatus').textContent=t('“{n}” añadida a la hoja.',{n:(S.name||'').toUpperCase()}); });
+  $('pdfStatus').textContent=t('“{n}” añadida a la hoja.',{n:(S.name||t('Sin nombre')).toUpperCase()}); });
 $('updCard').addEventListener('click',async()=>{ if(!editingId) return; const old=CARDS.find(x=>x.id===editingId); const c=currentCard(editingId); if(old) c.created=old.created;
   await storeCard(c); $('pdfStatus').textContent=t('Cambios guardados en la hoja.'); });
 $('newCard').addEventListener('click',()=>{ const keepLogo=logo, keepLogoSrc=logoSrc; Object.assign(S,defaults());
@@ -926,7 +925,7 @@ $('themeBtn').addEventListener('click',()=>{const r=document.documentElement,c=r
 
 /* boot */
 (async function(){
-  try{ const saved=JSON.parse(localStorage.getItem('mz-dash-v2')||'null'); if(saved){Object.assign(S,saved); S.fit=Object.assign(JSON.parse(JSON.stringify(DEFAULTS.fit)),saved.fit||{}); if(!S.src) S.src={};} }catch(e){}
+  try{ localStorage.removeItem('mz-dash-v2'); }catch(e){}
   collectI18n(); applyStaticLang(); $('dbHint').textContent=t(DB_HINT);
   syncUI();
   const imgs=await Promise.all(FILES.map(n=>loadImg('assets/'+n+'.png').then(i=>{IMG[n]=i;})));
