@@ -744,31 +744,26 @@ function cleanArt(src,opt){
   const hsv=i=>{ const r=d[i]/255,gg=d[i+1]/255,b=d[i+2]/255, mx=Math.max(r,gg,b), mn=Math.min(r,gg,b), df=mx-mn;
     let h=0; if(df){ if(mx===r) h=((gg-b)/df+6)%6; else if(mx===gg) h=(b-r)/df+2; else h=(r-gg)/df+4; } return [h*60, mx?df/mx:0, mx]; };
   let removed=0;
-  /* 1. name banner: wide, short block of orange/red in the lower-right area */
+  /* 1. name banner: the template always puts it in the same bottom-right box (≈54–97 % × 88–98 %) */
   if(opt.banner){
-    const m=new Uint8Array(N), x0=Math.floor(W*0.35), y0=Math.floor(H*0.72);
-    for(let y=y0;y<H;y++) for(let x=x0;x<W;x++){ const p=y*W+x, [h,s,v]=hsv(p*4); if((h<=35||h>=345)&&s>0.5&&v>0.33) m[p]=1; }
-    const seen=new Uint8Array(N), st=new Int32Array(N); let best=null;
-    for(let y=y0;y<H;y++) for(let x=x0;x<W;x++){ const p0=y*W+x; if(!m[p0]||seen[p0]) continue;
-      let sp=0,n=0,a=W,b=H,e=0,f=0; st[sp++]=p0; seen[p0]=1;
-      while(sp){ const p=st[--sp], px=p%W, py=(p/W)|0; n++; if(px<a)a=px; if(px>e)e=px; if(py<b)b=py; if(py>f)f=py;
-        for(const q of [p-1,p+1,p-W,p+W]){ if(q<0||q>=N||seen[q]||!m[q]) continue; const qx=q%W; if(Math.abs(qx-px)>1) continue; seen[q]=1; st[sp++]=q; } }
-      if(!best||n>best.n) best={n,a,b,e,f}; }
-    if(best){ const bw=best.e-best.a+1, bh=best.f-best.b+1;
-      if(bw>W*0.22&&bh<H*0.2&&bh>H*0.03&&best.n>bw*bh*0.35){
-        const mg=Math.round(W*0.012)+2;
-        for(let y=Math.max(0,best.b-mg);y<Math.min(H,best.f+mg+1);y++) for(let x=Math.max(0,best.a-mg);x<Math.min(W,best.e+mg+1);x++){ const i=(y*W+x)*4; if(d[i+3]){ d[i+3]=0; removed++; } } } }
+    const isB=i=>d[i]>d[i+1]+50&&d[i]>d[i+2]+60&&d[i]>80, isT=i=>(d[i]>d[i+1]+25&&d[i]>d[i+2]+30)||(d[i]>200&&d[i+1]>190&&d[i+2]>180);
+    const frac=(x0,x1,y0,y1,f)=>{ f=f||isB; let n=0,k=0; for(let y=Math.round(y0);y<=Math.round(y1);y+=1) for(let x=Math.round(x0);x<=Math.round(x1);x+=2){ k++; if(f((y*W+x)*4)) n++; } return k?n/k:0; };
+    if(frac(W*0.60,W*0.93,H*0.905,H*0.955)>0.28&&frac(W*0.60,W*0.93,H*0.905,H*0.955,isT)>0.75){
+      /* refine each edge: move outwards while the line is still mostly banner colour (limited to a small window) */
+      let x0=W*0.60,x1=W*0.93,y0=H*0.905,y1=H*0.955; const cy0=y0,cy1=y1,cx0=x0,cx1=x1;
+      while(x0>W*0.52&&frac(x0-1,x0-1,cy0,cy1,isT)>0.6) x0--;  while(x1<W*0.99&&frac(x1+1,x1+1,cy0,cy1,isT)>0.6) x1++;
+      while(y0>H*0.865&&frac(cx0,cx1,y0-1,y0-1,isT)>0.6) y0--; while(y1<H*0.995&&frac(cx0,cx1,y1+1,y1+1,isT)>0.6) y1++;
+      const mg=Math.round(W*0.016)+2;
+      for(let y=Math.max(0,Math.floor(y0)-mg);y<Math.min(H,Math.ceil(y1)+mg+1);y++) for(let x=Math.max(0,Math.floor(x0)-mg);x<Math.min(W,Math.ceil(x1)+mg+1);x++){ const i=(y*W+x)*4; if(d[i+3]){ d[i+3]=0; removed++; } } }
   }
-  /* 2. colour of the halftone dots: most common saturated colour in the outer band of the image */
+  /* 2. halftone dots: the template uses a blue (heroes) or green (zombies) dot screen; measure the exact shade in the outer band */
   let D=[255,255,255];
-  if(opt.dots){ const bins=new Map();
-    for(let y=0;y<H;y+=2) for(let x=0;x<W;x+=2){ const cx=(x-W/2)/(W/2), cy=(y-H/2)/(H/2), r2=cx*cx+cy*cy; if(r2<0.25) continue;
-      const i=(y*W+x)*4; if(!d[i+3]) continue; const [h,s,v]=hsv(i); if(s<0.25||v<0.3||v>0.97) continue;
-      const k=(d[i]>>4)<<8|(d[i+1]>>4)<<4|(d[i+2]>>4), o=bins.get(k)||{n:0,r:0,g:0,b:0}; o.n++; o.r+=d[i]; o.g+=d[i+1]; o.b+=d[i+2]; bins.set(k,o); }
-    let top=null; for(const o of bins.values()) if(!top||o.n>top.n) top=o;
-    if(top&&top.n>40){ /* merge neighbouring bins around the peak */ let n=0,r=0,gg=0,b=0; const pr=top.r/top.n,pg=top.g/top.n,pb=top.b/top.n;
-      for(const o of bins.values()){ const dr=o.r/o.n-pr,dg=o.g/o.n-pg,db=o.b/o.n-pb; if(dr*dr+dg*dg+db*db<35*35){ n+=o.n; r+=o.r; gg+=o.g; b+=o.b; } }
-      D=[r/n,gg/n,b/n]; } }
+  if(opt.dots){ const PAL=[[88,134,147],[121,141,84]], acc=PAL.map(()=>({n:0,r:0,g:0,b:0}));
+    for(let y=0;y<H;y+=2) for(let x=0;x<W;x+=2){ const cx=(x-W/2)/(W/2), cy=(y-H/2)/(H/2); if(cx*cx+cy*cy<0.3) continue;
+      const i=(y*W+x)*4; if(!d[i+3]) continue;
+      PAL.forEach((P,k)=>{ if(Math.hypot(d[i]-P[0],d[i+1]-P[1],d[i+2]-P[2])<34){ const o=acc[k]; o.n++; o.r+=d[i]; o.g+=d[i+1]; o.b+=d[i+2]; } }); }
+    const k=acc[0].n>=acc[1].n?0:1, o=acc[k];
+    if(o.n>N/4/60) D=[o.r/o.n,o.g/o.n,o.b/o.n]; }
   /* only treat it as a halftone if that colour forms many separate small dots in the outer band */
   if(D[0]!==255||D[1]!==255||D[2]!==255){ const near=i=>Math.hypot(d[i]-D[0],d[i+1]-D[1],d[i+2]-D[2])<45;
     const seen=new Uint8Array(N), st=new Int32Array(N); let dots=0;
@@ -782,7 +777,10 @@ function cleanArt(src,opt){
     const qr=D[0]+t*V[0],qg=D[1]+t*V[1],qb=D[2]+t*V[2]; return [Math.hypot(d[i]-qr,d[i+1]-qg,d[i+2]-qb),qr,qg,qb]; };
   /* 3. flood fill from the border through white / dot-coloured pixels */
   const tol=opt.tol, mask=new Uint8Array(N), q=new Int32Array(N); let qh=0,qt=0;
-  const isBg=p=>{ const i=p*4; if(d[i+3]<16) return true; return dist(i)[0]<tol; };
+  /* background = clear white, or the dot colour, or the soft blend between both (tight, so pale figure colours survive) */
+  const isBg=p=>{ const i=p*4; if(d[i+3]<16) return true; const r=d[i],gg=d[i+1],b=d[i+2], mn=Math.min(r,gg,b), mx=Math.max(r,gg,b);
+    if(mn>=255-tol&&mx-mn<=26) return true; if(!VV) return false;
+    if(Math.hypot(r-D[0],gg-D[1],b-D[2])<38) return true; return dist(i)[0]<13; };
   const push=p=>{ if(!mask[p]&&isBg(p)){ mask[p]=1; q[qt++]=p; } };
   for(let x=0;x<W;x++){ push(x); push((H-1)*W+x); } for(let y=1;y<H-1;y++){ push(y*W); push(y*W+W-1); }
   for(let p=0;p<N;p++) if(!d[p*4+3]&&!mask[p]){ mask[p]=1; q[qt++]=p; }  /* banner hole is background too */
@@ -790,14 +788,14 @@ function cleanArt(src,opt){
     if(x>0) push(p-1); if(x<W-1) push(p+1); if(p>=W) push(p-W); if(p<N-W) push(p+W); }
   for(let p=0;p<N;p++) if(mask[p]&&d[p*4+3]){ d[p*4+3]=0; removed++; }
   if(removed<N*0.01) return null;
-  /* 3b. halftone pockets enclosed by the figure (between arms and body…): a region made of dots AND white */
+  /* 3b. halftone pockets enclosed by the figure (between arms and body…): dots mixed with white, or a solid patch of the exact dot colour */
   if(opt.dots&&VV){ const seen=new Uint8Array(N), st=new Int32Array(N);
     for(let p0=0;p0<N;p0++){ if(mask[p0]||seen[p0]||!isBg(p0)) continue;
-      const list=[]; let sp=0, nd=0, nw=0; st[sp++]=p0; seen[p0]=1;
+      const list=[]; let sp=0, nd=0, nw=0, nn=0; st[sp++]=p0; seen[p0]=1;
       while(sp){ const p=st[--sp]; list.push(p); const i=p*4; const pr=d[i]-D[0],pg=d[i+1]-D[1],pb=d[i+2]-D[2]; const t=(pr*V[0]+pg*V[1]+pb*V[2])/VV;
-        if(t<0.3) nd++; else if(t>0.85) nw++;
+        if(t<0.3) nd++; else if(t>0.85) nw++; if(pr*pr+pg*pg+pb*pb<256) nn++;
         const x=p%W; for(const qq of [x>0?p-1:-1,x<W-1?p+1:-1,p-W,p+W]){ if(qq<0||qq>=N||seen[qq]||mask[qq]||!isBg(qq)) continue; seen[qq]=1; st[sp++]=qq; } }
-      if(list.length>N*0.002&&nd>list.length*0.12&&nw>list.length*0.015) for(const p of list){ mask[p]=1; d[p*4+3]=0; removed++; } } }
+      const L=list.length; if(L>N*0.002&&((nd>L*0.12&&nw>L*0.015)||(nd>L*0.9&&nn>L*0.55))) for(const p of list){ mask[p]=1; d[p*4+3]=0; removed++; } } }
   /* 4. soft, de-fringed edge */
   const soft=tol*2.6;
   for(let pass=0;pass<2;pass++){ const ring=[];
