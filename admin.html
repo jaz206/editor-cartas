@@ -182,7 +182,7 @@ label.f{display:flex;flex-direction:column;gap:4px;font:600 .72rem var(--ui);let
               <div class="big" id="eImg">Sin imagen</div>
               <div style="display:grid;gap:8px;flex:1;min-width:180px">
                 <label class="btn" for="eImgIn">Subir imagen<input type="file" id="eImgIn" accept="image/*" hidden></label>
-                <label class="check"><input type="checkbox" id="eBgChk" checked> Quitar fondo blanco</label>
+                <span class="hint" style="margin:0">Al subir, quitar:</span><label class="check"><input type="checkbox" id="eBgChk" checked> fondo blanco</label><label class="check"><input type="checkbox" id="eDotChk" checked> puntos de trama</label><label class="check"><input type="checkbox" id="eBanChk" checked> etiqueta del nombre</label>
                 <button class="btn danger" type="button" id="eImgDel">Quitar imagen subida</button>
                 <label class="f">ID de Google Drive<input type="text" data-f="img" placeholder="Opcional"></label>
                 <label class="f">URL de imagen (wiki)<input type="url" data-f="url" placeholder="https://static.wikia.nocookie.net/…"></label>
@@ -409,36 +409,91 @@ async function encode(im,maxSide,type,forceType){
     s*=0.8; }
   throw new Error('La imagen es demasiado grande incluso reducida.');
 }
-/* removes a white / near-white background connected to the image border (flood fill), with soft,
-   colour-cleaned edges; white parts inside the figure are kept. Returns a canvas, or null if there was nothing to remove. */
-function removeWhiteBg(src,tol){
-  tol=tol||28; const W=src.naturalWidth||src.width, H=src.naturalHeight||src.height;
+/* Cleans a character illustration for the card: removes the white background and, optionally, the halftone
+   dot circle behind the figure and the name banner in the bottom-right corner. Only background reachable from
+   the image border is removed (the comic ink outline protects the figure), with soft, de-fringed edges.
+   Returns a canvas, or null when there was nothing to remove. */
+function cleanArt(src,opt){
+  opt=Object.assign({dots:true,banner:true,tol:30},opt||{});
+  const W=src.naturalWidth||src.width, H=src.naturalHeight||src.height, N=W*H;
   const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,0,0,W,H);
-  const id=g.getImageData(0,0,W,H), d=id.data, N=W*H, mask=new Uint8Array(N), q=new Int32Array(N); let qh=0,qt=0;
-  const bg=p=>{ const i=p*4, a=d[i+3]; if(a<16) return true; const r=d[i],gg=d[i+1],b=d[i+2], mn=Math.min(r,gg,b), mx=Math.max(r,gg,b); return mn>=255-tol&&mx-mn<=26; };
-  let opaqueBorder=0, borderN=0;
-  const seed=p=>{ borderN++; if(d[p*4+3]>=250) opaqueBorder++; if(!mask[p]&&bg(p)){ mask[p]=1; q[qt++]=p; } };
-  for(let x=0;x<W;x++){ seed(x); seed((H-1)*W+x); } for(let y=1;y<H-1;y++){ seed(y*W); seed(y*W+W-1); }
-  if(opaqueBorder<borderN*0.5) return null;               /* already transparent around the edges */
-  while(qh<qt){ const p=q[qh++], x=p%W;
-    if(x>0&&!mask[p-1]&&bg(p-1)){mask[p-1]=1;q[qt++]=p-1;} if(x<W-1&&!mask[p+1]&&bg(p+1)){mask[p+1]=1;q[qt++]=p+1;}
-    if(p>=W&&!mask[p-W]&&bg(p-W)){mask[p-W]=1;q[qt++]=p-W;} if(p<N-W&&!mask[p+W]&&bg(p+W)){mask[p+W]=1;q[qt++]=p+W;} }
-  if(qt<N*0.01) return null;
-  for(let p=0;p<N;p++) if(mask[p]) d[p*4+3]=0;
-  /* soft edge: pixels touching the background fade with their whiteness and lose the white fringe */
-  const lo=255-tol*3;
-  for(let pass=0;pass<2;pass++){ const ring=[];
-    for(let p=0;p<N;p++){ if(mask[p]) continue; const x=p%W;
-      if((x>0&&mask[p-1])||(x<W-1&&mask[p+1])||(p>=W&&mask[p-W])||(p<N-W&&mask[p+W])) ring.push(p); }
-    for(const p of ring){ const i=p*4, mn=Math.min(d[i],d[i+1],d[i+2]); mask[p]=2;
-      if(mn<=lo) continue; const a=Math.max(0.15,1-(mn-lo)/(255-lo));
-      for(let k=0;k<3;k++) d[i+k]=Math.max(0,Math.min(255,(d[i+k]-255*(1-a))/a));
-      d[i+3]=Math.round(d[i+3]*a); }
+  const id=g.getImageData(0,0,W,H), d=id.data;
+  let border=0,opaque=0; for(let x=0;x<W;x++) for(const y of [0,H-1]){ border++; if(d[(y*W+x)*4+3]>=250) opaque++; }
+  if(opaque<border*0.5) return null;                                   /* already transparent */
+  const hsv=i=>{ const r=d[i]/255,gg=d[i+1]/255,b=d[i+2]/255, mx=Math.max(r,gg,b), mn=Math.min(r,gg,b), df=mx-mn;
+    let h=0; if(df){ if(mx===r) h=((gg-b)/df+6)%6; else if(mx===gg) h=(b-r)/df+2; else h=(r-gg)/df+4; } return [h*60, mx?df/mx:0, mx]; };
+  let removed=0;
+  /* 1. name banner: wide, short block of orange/red in the lower-right area */
+  if(opt.banner){
+    const m=new Uint8Array(N), x0=Math.floor(W*0.35), y0=Math.floor(H*0.72);
+    for(let y=y0;y<H;y++) for(let x=x0;x<W;x++){ const p=y*W+x, [h,s,v]=hsv(p*4); if((h<=35||h>=345)&&s>0.5&&v>0.33) m[p]=1; }
+    const seen=new Uint8Array(N), st=new Int32Array(N); let best=null;
+    for(let y=y0;y<H;y++) for(let x=x0;x<W;x++){ const p0=y*W+x; if(!m[p0]||seen[p0]) continue;
+      let sp=0,n=0,a=W,b=H,e=0,f=0; st[sp++]=p0; seen[p0]=1;
+      while(sp){ const p=st[--sp], px=p%W, py=(p/W)|0; n++; if(px<a)a=px; if(px>e)e=px; if(py<b)b=py; if(py>f)f=py;
+        for(const q of [p-1,p+1,p-W,p+W]){ if(q<0||q>=N||seen[q]||!m[q]) continue; const qx=q%W; if(Math.abs(qx-px)>1) continue; seen[q]=1; st[sp++]=q; } }
+      if(!best||n>best.n) best={n,a,b,e,f}; }
+    if(best){ const bw=best.e-best.a+1, bh=best.f-best.b+1;
+      if(bw>W*0.22&&bh<H*0.2&&bh>H*0.03&&best.n>bw*bh*0.35){
+        const mg=Math.round(W*0.012)+2;
+        for(let y=Math.max(0,best.b-mg);y<Math.min(H,best.f+mg+1);y++) for(let x=Math.max(0,best.a-mg);x<Math.min(W,best.e+mg+1);x++){ const i=(y*W+x)*4; if(d[i+3]){ d[i+3]=0; removed++; } } } }
   }
-  g.putImageData(id,0,0); return c;
+  /* 2. colour of the halftone dots: most common saturated colour in the outer band of the image */
+  let D=[255,255,255];
+  if(opt.dots){ const bins=new Map();
+    for(let y=0;y<H;y+=2) for(let x=0;x<W;x+=2){ const cx=(x-W/2)/(W/2), cy=(y-H/2)/(H/2), r2=cx*cx+cy*cy; if(r2<0.25) continue;
+      const i=(y*W+x)*4; if(!d[i+3]) continue; const [h,s,v]=hsv(i); if(s<0.25||v<0.3||v>0.97) continue;
+      const k=(d[i]>>4)<<8|(d[i+1]>>4)<<4|(d[i+2]>>4), o=bins.get(k)||{n:0,r:0,g:0,b:0}; o.n++; o.r+=d[i]; o.g+=d[i+1]; o.b+=d[i+2]; bins.set(k,o); }
+    let top=null; for(const o of bins.values()) if(!top||o.n>top.n) top=o;
+    if(top&&top.n>40){ /* merge neighbouring bins around the peak */ let n=0,r=0,gg=0,b=0; const pr=top.r/top.n,pg=top.g/top.n,pb=top.b/top.n;
+      for(const o of bins.values()){ const dr=o.r/o.n-pr,dg=o.g/o.n-pg,db=o.b/o.n-pb; if(dr*dr+dg*dg+db*db<35*35){ n+=o.n; r+=o.r; gg+=o.g; b+=o.b; } }
+      D=[r/n,gg/n,b/n]; } }
+  /* only treat it as a halftone if that colour forms many separate small dots in the outer band */
+  if(D[0]!==255||D[1]!==255||D[2]!==255){ const near=i=>Math.hypot(d[i]-D[0],d[i+1]-D[1],d[i+2]-D[2])<45;
+    const seen=new Uint8Array(N), st=new Int32Array(N); let dots=0;
+    for(let p0=0;p0<N&&dots<40;p0++){ const x0=p0%W, y0=(p0/W)|0, cx=(x0-W/2)/(W/2), cy=(y0-H/2)/(H/2); if(cx*cx+cy*cy<0.45||seen[p0]||!d[p0*4+3]||!near(p0*4)) continue;
+      let sp=0,n=0; st[sp++]=p0; seen[p0]=1;
+      while(sp&&n<=4000){ const p=st[--sp]; n++; const x=p%W; for(const qq of [x>0?p-1:-1,x<W-1?p+1:-1,p-W,p+W]){ if(qq<0||qq>=N||seen[qq]||!d[qq*4+3]||!near(qq*4)) continue; seen[qq]=1; st[sp++]=qq; } }
+      if(n>=4&&n<4000) dots++; }
+    if(dots<25) D=[255,255,255]; }
+  const Wc=[255,255,255], V=[Wc[0]-D[0],Wc[1]-D[1],Wc[2]-D[2]], VV=V[0]*V[0]+V[1]*V[1]+V[2]*V[2];
+  const dist=i=>{ const pr=d[i]-D[0],pg=d[i+1]-D[1],pb=d[i+2]-D[2]; let t=VV?(pr*V[0]+pg*V[1]+pb*V[2])/VV:1; t=t<0?0:t>1?1:t;
+    const qr=D[0]+t*V[0],qg=D[1]+t*V[1],qb=D[2]+t*V[2]; return [Math.hypot(d[i]-qr,d[i+1]-qg,d[i+2]-qb),qr,qg,qb]; };
+  /* 3. flood fill from the border through white / dot-coloured pixels */
+  const tol=opt.tol, mask=new Uint8Array(N), q=new Int32Array(N); let qh=0,qt=0;
+  const isBg=p=>{ const i=p*4; if(d[i+3]<16) return true; return dist(i)[0]<tol; };
+  const push=p=>{ if(!mask[p]&&isBg(p)){ mask[p]=1; q[qt++]=p; } };
+  for(let x=0;x<W;x++){ push(x); push((H-1)*W+x); } for(let y=1;y<H-1;y++){ push(y*W); push(y*W+W-1); }
+  for(let p=0;p<N;p++) if(!d[p*4+3]&&!mask[p]){ mask[p]=1; q[qt++]=p; }  /* banner hole is background too */
+  while(qh<qt){ const p=q[qh++], x=p%W;
+    if(x>0) push(p-1); if(x<W-1) push(p+1); if(p>=W) push(p-W); if(p<N-W) push(p+W); }
+  for(let p=0;p<N;p++) if(mask[p]&&d[p*4+3]){ d[p*4+3]=0; removed++; }
+  if(removed<N*0.01) return null;
+  /* 3b. halftone pockets enclosed by the figure (between arms and body…): a region made of dots AND white */
+  if(opt.dots&&VV){ const seen=new Uint8Array(N), st=new Int32Array(N);
+    for(let p0=0;p0<N;p0++){ if(mask[p0]||seen[p0]||!isBg(p0)) continue;
+      const list=[]; let sp=0, nd=0, nw=0; st[sp++]=p0; seen[p0]=1;
+      while(sp){ const p=st[--sp]; list.push(p); const i=p*4; const pr=d[i]-D[0],pg=d[i+1]-D[1],pb=d[i+2]-D[2]; const t=(pr*V[0]+pg*V[1]+pb*V[2])/VV;
+        if(t<0.3) nd++; else if(t>0.85) nw++;
+        const x=p%W; for(const qq of [x>0?p-1:-1,x<W-1?p+1:-1,p-W,p+W]){ if(qq<0||qq>=N||seen[qq]||mask[qq]||!isBg(qq)) continue; seen[qq]=1; st[sp++]=qq; } }
+      if(list.length>N*0.002&&nd>list.length*0.12&&nw>list.length*0.015) for(const p of list){ mask[p]=1; d[p*4+3]=0; removed++; } } }
+  /* 4. soft, de-fringed edge */
+  const soft=tol*2.6;
+  for(let pass=0;pass<2;pass++){ const ring=[];
+    for(let p=0;p<N;p++){ if(mask[p]) continue; const x=p%W; if((x>0&&mask[p-1])||(x<W-1&&mask[p+1])||(p>=W&&mask[p-W])||(p<N-W&&mask[p+W])) ring.push(p); }
+    for(const p of ring){ mask[p]=2; const i=p*4, [ds,qr,qg,qb]=dist(i); if(ds>=soft) continue; const a=Math.max(0.12,ds/soft);
+      d[i]=Math.max(0,Math.min(255,(d[i]-qr*(1-a))/a)); d[i+1]=Math.max(0,Math.min(255,(d[i+1]-qg*(1-a))/a)); d[i+2]=Math.max(0,Math.min(255,(d[i+2]-qb*(1-a))/a));
+      d[i+3]=Math.round(d[i+3]*a); } }
+  /* 5. drop leftover specks (stray dots / JPEG noise) */
+  const lab=new Int32Array(N).fill(-1), st=new Int32Array(N), minA=Math.max(30,N*0.0004);
+  for(let p0=0;p0<N;p0++){ if(lab[p0]!==-1||d[p0*4+3]<40) continue; let sp=0,list=[]; st[sp++]=p0; lab[p0]=p0;
+    while(sp){ const p=st[--sp]; list.push(p); if(list.length>minA) { /* big enough: just label the rest */ }
+      const x=p%W; for(const qq of [x>0?p-1:-1,x<W-1?p+1:-1,p-W,p+W]){ if(qq<0||qq>=N||lab[qq]!==-1||d[qq*4+3]<40) continue; lab[qq]=p0; st[sp++]=qq; } }
+    if(list.length<minA) for(const p of list) d[p*4+3]=0; }
+  g.putImageData(id,0,0); c.__dot=D; return c;
 }
 $('eImgIn').addEventListener('change',async e=>{ const f=e.target.files[0], c=cur(); e.target.value=''; if(!f||!c) return;
-  try{ let im=await readAsImage(f); if($('eBgChk').checked){ const cut=removeWhiteBg(im); if(cut) im=cut; } const r=await encode(im,1600,'image/webp');
+  try{ let im=await readAsImage(f); if($('eBgChk').checked){ const cut=cleanArt(im,{dots:$('eDotChk').checked,banner:$('eBanChk').checked}); if(cut) im=cut; } const r=await encode(im,1600,'image/webp');
     const path=`assets/pj/${SEL.src}-${slug(c.n)}-${Date.now().toString(36)}.${r.ext}`;
     if(c.file&&IMGS.has(c.file)) IMGS.delete(c.file); else if(c.file) REMOVE.add(c.file);
     IMGS.set(path,{data:r.b64,url:r.url}); c.file=path; changedAll(); renderEditMeta(); }
