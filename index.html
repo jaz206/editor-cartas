@@ -178,6 +178,7 @@ details.about b{color:var(--ink)}
           <div class="seg" role="radiogroup" aria-label="Figura a ajustar">
             <label><input type="radio" name="adjust" value="main" checked><span>Figura</span></label>
             <label><input type="radio" name="adjust" value="big"><span>Figura grande</span></label>
+            <label><input type="radio" name="adjust" value="both"><span>Las dos</span></label>
           </div>
         </div>
         <label class="f">Zoom <span id="zoomLbl" data-dyn style="text-transform:none"></span><input type="range" id="zoom" min="0.3" max="3" step="0.01" value="1"></label>
@@ -366,7 +367,7 @@ const EN={
 'No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.':'Couldn’t read the sheet: check that it’s a .json saved from this section.',
 'frente':'front','Nombre del personaje':'Character name','Ej.: RAYOS DE HIELO':'E.g. ICE BEAMS','Título de la habilidad azul':'Blue skill title','Título de la habilidad naranja':'Orange skill title','Título de la habilidad roja':'Red skill title',
 'Texto de la habilidad azul. Usa * para el símbolo de Poder.':'Blue skill text. Use * for the Power symbol.','Texto de la habilidad naranja. Usa * para el símbolo de Poder.':'Orange skill text. Use * for the Power symbol.','Texto de la habilidad roja. Usa * para el símbolo de Poder.':'Red skill text. Use * for the Power symbol.',
-'— Elige un personaje —':'— Choose a character —','Al subir, quitar:':'On upload, remove:','Retocar recorte':'Touch up cut-out','Primero sube o carga una imagen.':'First upload or load an image.','Dejar':'Keep','Quitar':'Remove','Rodear':'Lasso','Pincel':'Brush','Por color':'By colour','Tolerancia':'Tolerance','solo zona conectada':'connected area only','Fondo a cuadros':'Checkered background','Fondo oscuro':'Dark background','Fondo verde':'Green background','Ampliar 1 px':'Grow 1 px','Deseleccionar':'Deselect','Borrar selección':'Delete selection','Seleccionado':'Selected','Pulsa sobre un color (por ejemplo, un punto de la trama) para seleccionar todo lo que se le parezca; cada clic añade más.':'Click a colour (for example a halftone dot) to select everything similar; each click adds more.','Hay una selección (en magenta): con “Quitar” añades zonas y con “Dejar” las sacas de la selección. Luego pulsa “Borrar selección”.':'There is a selection (magenta): “Remove” adds areas and “Keep” takes them out of it. Then press “Delete selection”.','sin blanco':'no white','Al dejar una zona, no recupera el blanco del fondo':'When keeping an area, don’t bring back the white background','Grosor':'Size','Deshacer':'Undo','Volver al original':'Back to original','Cancelar':'Cancel','Aplicar':'Apply','“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.':'“Keep”: circle or paint what was removed but should stay. “Remove”: circle or paint what should go.','fondo blanco':'white background','puntos de trama':'halftone dots','etiqueta del nombre':'name banner','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
+'— Elige un personaje —':'— Choose a character —','Al subir, quitar:':'On upload, remove:','Retocar recorte':'Touch up cut-out','Primero sube o carga una imagen.':'First upload or load an image.','Dejar':'Keep','Quitar':'Remove','Rodear':'Lasso','Pincel':'Brush','Las dos':'Both','Por color':'By colour','Tolerancia':'Tolerance','solo zona conectada':'connected area only','Fondo a cuadros':'Checkered background','Fondo oscuro':'Dark background','Fondo verde':'Green background','Ampliar 1 px':'Grow 1 px','Deseleccionar':'Deselect','Borrar selección':'Delete selection','Seleccionado':'Selected','Pulsa sobre un color (por ejemplo, un punto de la trama) para seleccionar todo lo que se le parezca; cada clic añade más.':'Click a colour (for example a halftone dot) to select everything similar; each click adds more.','Hay una selección (en magenta): con “Quitar” añades zonas y con “Dejar” las sacas de la selección. Luego pulsa “Borrar selección”.':'There is a selection (magenta): “Remove” adds areas and “Keep” takes them out of it. Then press “Delete selection”.','sin blanco':'no white','Al dejar una zona, no recupera el blanco del fondo':'When keeping an area, don’t bring back the white background','Grosor':'Size','Deshacer':'Undo','Volver al original':'Back to original','Cancelar':'Cancel','Aplicar':'Apply','“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.':'“Keep”: circle or paint what was removed but should stay. “Remove”: circle or paint what should go.','fondo blanco':'white background','puntos de trama':'halftone dots','etiqueta del nombre':'name banner','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
 };
 /* default texts of a new card, per language (swapped on language change if still untouched) */
 const DEF_TEXT={
@@ -485,10 +486,22 @@ function bigLayer(){
 }
 
 /* ---------- helpers ---------- */
+/* visible part of an image (ignores transparent margins left by the cut-out), cached per image */
+const BBOX=new WeakMap();
+function contentBox(img){
+  if(BBOX.has(img)) return BBOX.get(img);
+  const W=img.naturalWidth||img.width, H=img.naturalHeight||img.height; let b={x:0,y:0,w:W,h:H};
+  try{ const k=Math.min(1,320/Math.max(W,H)), w=Math.max(1,Math.round(W*k)), h=Math.max(1,Math.round(H*k));
+    const t=document.createElement('canvas'); t.width=w; t.height=h; const g=t.getContext('2d',{willReadFrequently:true}); g.drawImage(img,0,0,w,h);
+    const d=g.getImageData(0,0,w,h).data; let x0=w,y0=h,x1=-1,y1=-1;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(d[(y*w+x)*4+3]>24){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    if(x1>=0) b={x:x0/k,y:y0/k,w:(x1-x0+1)/k,h:(y1-y0+1)/k}; }catch(e){}
+  BBOX.set(img,b); return b;
+}
 function drawFit(c,img,box,f){
   if(!img) return;
-  const sc=Math.min(box.s/img.width,box.s/img.height)*f.z, w=img.width*sc, h=img.height*sc;
-  c.drawImage(img, box.x+box.s/2+f.x-w/2, box.y+box.s/2+f.y-h/2, w, h);
+  const b=contentBox(img), sc=Math.min(box.s/b.w,box.s/b.h)*f.z, W=img.naturalWidth||img.width, H=img.naturalHeight||img.height;
+  c.drawImage(img, box.x+box.s/2+f.x-(b.x+b.w/2)*sc, box.y+box.s/2+f.y-(b.y+b.h/2)*sc, W*sc, H*sc);
 }
 function font(fam,size){ctx.font=`${size}px "${fam}"`;}
 function tw(text,track){ if(!track) return ctx.measureText(text).width; let w=0; for(const ch of text) w+=ctx.measureText(ch).width+track; return w-track; }
@@ -703,7 +716,8 @@ function buildSeg(id,name,from,to){
     l.innerHTML=`<input type="radio" name="${name}" value="${v}"><span>${v}</span>`; el.appendChild(l);}
 }
 buildSeg('healthSeg','health',1,8); buildSeg('powerSeg','power',1,8);
-function target(){return S.face==='front'?'front':S.adjust;}
+function target(){return S.face==='front'?'front':S.adjust==='both'?'main':S.adjust;}
+function targets(){return S.face==='front'?['front']:S.adjust==='both'?['main','big']:[S.adjust];}
 function syncUI(){
   document.querySelectorAll('[data-k]').forEach(el=>{el.value=S[el.dataset.k]??'';});
   for(const n of ['face','mode','atype','health','power','adjust']){
@@ -727,8 +741,8 @@ $('form').addEventListener('input',e=>{
   if(t.type==='radio'&&t.name){ S[t.name]=(t.name==='health'||t.name==='power')?+t.value:t.value; changed(); }
 });
 $('copyChk').addEventListener('change',e=>{S.copy=e.target.checked;changed();});
-$('zoom').addEventListener('input',e=>{S.fit[target()].z=+e.target.value;$('zoomLbl').textContent=Math.round(S.fit[target()].z*100)+'%';draw();persist();});
-$('resetFit').addEventListener('click',()=>{S.fit[target()]={z:1,x:0,y:0};changed();});
+$('zoom').addEventListener('input',e=>{const z0=S.fit[target()].z, z=+e.target.value; for(const k of targets()) S.fit[k].z=k===target()?z:S.fit[k].z*z/z0;$('zoomLbl').textContent=Math.round(S.fit[target()].z*100)+'%';draw();persist();});
+$('resetFit').addEventListener('click',()=>{for(const k of targets()) S.fit[k]={z:1,x:0,y:0};changed();});
 function readFile(file){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file);});}
 /* Cleans a character illustration for the card: removes the white background and, optionally, the halftone
    dot circle behind the figure and the name banner in the bottom-right corner. Only background reachable from
@@ -935,8 +949,9 @@ $('logoIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)
 /* drag to move the selected figure */
 const box=$('cv'); let drag=null;
 box.addEventListener('pointerdown',e=>{ if(!art) return; drag={x:e.clientX,y:e.clientY}; box.classList.add('drag'); box.setPointerCapture(e.pointerId); });
-box.addEventListener('pointermove',e=>{ if(!drag) return; const k=CW/box.clientWidth, f=S.fit[target()];
-  f.x+=(e.clientX-drag.x)*k; f.y+=(e.clientY-drag.y)*k; drag={x:e.clientX,y:e.clientY}; draw(); });
+box.addEventListener('pointermove',e=>{ if(!drag) return; const k=CW/box.clientWidth;
+  for(const t of targets()){ const f=S.fit[t], m=t==='big'&&S.adjust==='both'?BOX.big.s/BOX.main.s:1; f.x+=(e.clientX-drag.x)*k*m; f.y+=(e.clientY-drag.y)*k*m; }
+  drag={x:e.clientX,y:e.clientY}; draw(); });
 const end=()=>{ if(drag){drag=null;box.classList.remove('drag');persist();} };
 box.addEventListener('pointerup',end); box.addEventListener('pointercancel',end);
 
