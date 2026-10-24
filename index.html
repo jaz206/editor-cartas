@@ -266,9 +266,9 @@ details.about b{color:var(--ink)}
         <label class="f">Habilidad<textarea data-k="hcAbility" rows="2" placeholder="Texto de la habilidad del héroe"></textarea></label>
         <div class="row">
           <label class="f">Resistencia<input type="text" data-k="hcT" placeholder="2" maxlength="2" inputmode="numeric"></label>
-          <label class="f">Resistencia secundaria<input type="text" data-k="hcT2" placeholder="Opcional" maxlength="2" inputmode="numeric"></label>
+          <label class="f">Resistencias secundarias<input type="text" data-k="hcT2" placeholder="Ej.: 1  o  3 2 1" maxlength="20"></label>
         </div>
-        <p class="hint">Deja vacía la resistencia secundaria para quitar el segundo corazón.</p>
+        <p class="hint">Escribe una o varias resistencias secundarias separadas por espacios o comas (hasta 4); cada una añade un corazón gris debajo. Déjalo vacío para no poner ninguno.</p>
       </section>
 
       <section class="sec back-only hero-only" hidden>
@@ -390,7 +390,7 @@ const EN={
 'No se pudo leer la hoja: comprueba que sea un .json guardado desde esta sección.':'Couldn’t read the sheet: check that it’s a .json saved from this section.',
 'frente':'front','Nombre del personaje':'Character name','Ej.: RAYOS DE HIELO':'E.g. ICE BEAMS','Título de la habilidad azul':'Blue skill title','Título de la habilidad naranja':'Orange skill title','Título de la habilidad roja':'Red skill title',
 'Texto de la habilidad azul. Usa * para el símbolo de Poder.':'Blue skill text. Use * for the Power symbol.','Texto de la habilidad naranja. Usa * para el símbolo de Poder.':'Orange skill text. Use * for the Power symbol.','Texto de la habilidad roja. Usa * para el símbolo de Poder.':'Red skill text. Use * for the Power symbol.',
-'— Elige un personaje —':'— Choose a character —','Al subir, quitar:':'On upload, remove:','Retocar recorte':'Touch up cut-out','Primero sube o carga una imagen.':'First upload or load an image.','Dejar':'Keep','Quitar':'Remove','Rodear':'Lasso','Pincel':'Brush','Dashboard':'Dashboard','Carta de héroe':'Hero card','Tipo de carta':'Card type','Habilidad':'Ability','Texto de la habilidad del héroe':'Hero ability text','Resistencia':'Toughness','Resistencia secundaria':'Secondary toughness','Opcional':'Optional','Deja vacía la resistencia secundaria para quitar el segundo corazón.':'Leave secondary toughness empty to remove the second heart.','El reverso de las cartas de héroe es fijo (imagen del juego, modo zombi o héroe).':'Hero card backs are fixed (game artwork, zombie or hero mode).','Carta':'Card','cartas de héroe':'hero cards','Las dos':'Both','Por color':'By colour','Tolerancia':'Tolerance','solo zona conectada':'connected area only','Fondo a cuadros':'Checkered background','Fondo oscuro':'Dark background','Fondo verde':'Green background','Ampliar 1 px':'Grow 1 px','Deseleccionar':'Deselect','Borrar selección':'Delete selection','Seleccionado':'Selected','Pulsa sobre un color (por ejemplo, un punto de la trama) para seleccionar todo lo que se le parezca; cada clic añade más.':'Click a colour (for example a halftone dot) to select everything similar; each click adds more.','Hay una selección (en magenta): con “Quitar” añades zonas y con “Dejar” las sacas de la selección. Luego pulsa “Borrar selección”.':'There is a selection (magenta): “Remove” adds areas and “Keep” takes them out of it. Then press “Delete selection”.','sin blanco':'no white','Al dejar una zona, no recupera el blanco del fondo':'When keeping an area, don’t bring back the white background','Grosor':'Size','Deshacer':'Undo','Volver al original':'Back to original','Cancelar':'Cancel','Aplicar':'Apply','“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.':'“Keep”: circle or paint what was removed but should stay. “Remove”: circle or paint what should go.','fondo blanco':'white background','puntos de trama':'halftone dots','etiqueta del nombre':'name banner','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
+'— Elige un personaje —':'— Choose a character —','Al subir, quitar:':'On upload, remove:','Retocar recorte':'Touch up cut-out','Primero sube o carga una imagen.':'First upload or load an image.','Dejar':'Keep','Quitar':'Remove','Rodear':'Lasso','Pincel':'Brush','Dashboard':'Dashboard','Carta de héroe':'Hero card','Tipo de carta':'Card type','Habilidad':'Ability','Texto de la habilidad del héroe':'Hero ability text','Resistencia':'Toughness','Resistencias secundarias':'Secondary toughness','Ej.: 1  o  3 2 1':'E.g. 1  or  3 2 1','Escribe una o varias resistencias secundarias separadas por espacios o comas (hasta 4); cada una añade un corazón gris debajo. Déjalo vacío para no poner ninguno.':'Type one or more secondary toughness values separated by spaces or commas (up to 4); each adds a grey heart below. Leave empty for none.','El reverso de las cartas de héroe es fijo (imagen del juego, modo zombi o héroe).':'Hero card backs are fixed (game artwork, zombie or hero mode).','Carta':'Card','cartas de héroe':'hero cards','Las dos':'Both','Por color':'By colour','Tolerancia':'Tolerance','solo zona conectada':'connected area only','Fondo a cuadros':'Checkered background','Fondo oscuro':'Dark background','Fondo verde':'Green background','Ampliar 1 px':'Grow 1 px','Deseleccionar':'Deselect','Borrar selección':'Delete selection','Seleccionado':'Selected','Pulsa sobre un color (por ejemplo, un punto de la trama) para seleccionar todo lo que se le parezca; cada clic añade más.':'Click a colour (for example a halftone dot) to select everything similar; each click adds more.','Hay una selección (en magenta): con “Quitar” añades zonas y con “Dejar” las sacas de la selección. Luego pulsa “Borrar selección”.':'There is a selection (magenta): “Remove” adds areas and “Keep” takes them out of it. Then press “Delete selection”.','sin blanco':'no white','Al dejar una zona, no recupera el blanco del fondo':'When keeping an area, don’t bring back the white background','Grosor':'Size','Deshacer':'Undo','Volver al original':'Back to original','Cancelar':'Cancel','Aplicar':'Apply','“Dejar”: rodea o pinta lo que se borró y debe quedarse. “Quitar”: rodea o pinta lo que sobra.':'“Keep”: circle or paint what was removed but should stay. “Remove”: circle or paint what should go.','fondo blanco':'white background','puntos de trama':'halftone dots','etiqueta del nombre':'name banner','Otros':'Other','No se pudo cargar la imagen de {n}.':'Couldn’t load {n}’s image.','Primero elige un personaje en la lista.':'First choose a character from the list.','reverso':'back','carta':'card','cartas-marvel-zombies':'marvel-zombies-cards','hoja-cartas':'card-sheet'
 };
 /* default texts of a new card, per language (swapped on language change if still untouched) */
 const DEF_TEXT={
@@ -477,7 +477,7 @@ const FILES=['front_bg_zombie','front_bg_hero','frame_zombie','frame_hero','devo
  'back_base_zombie','back_base_hero','back_blood','copyright_mark','bar_blue','bar_yellow','bar_orange','bar_red',
  'track_zombie_icon','track_hero_icon','track_zombie_tick','track_hero_tick'];
 for(const m of ['zombie','hero']) for(let j=0;j<5;j++) FILES.push(`track_${m}_row${j}`);
-for(const n of ['bg_zombie','bg_hero','back_zombie','back_hero','bar','abox','tough_zombie','tough_hero','tough2','plate_zombie','plate_hero']) FILES.push('hc/'+n);
+for(const n of ['bg_zombie','bg_hero','back_zombie','back_hero','bar','abox','tough_zombie','tough_hero','tough2_icon','plate_zombie','plate_hero']) FILES.push('hc/'+n);
 function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src;});}
 
 /* ---------- back-figure colour pipeline (Hue/Sat -100,+4 → Exposure -0.88 → Levels γ1.79 → Color fill) ---------- */
@@ -739,7 +739,7 @@ const HC={box:{x:-48,y:102,s:699},
   name:{zombie:{font:'MonsterMovies',size:51.43,track:-25,obl:0.24,cx:297.0,y:697.2,rot:0.01870},
         hero:{font:'DevilDog',size:52.08,track:0,obl:0,cx:298.0,y:695.6,rot:0.01855}},
   ability:{cx:300.9,w:340,top:722,base1:751.5,size:33.33,min:16,boxTop:694,boxBot:770,maxBot:798},
-  t1:{cx:467.2,y:165.6,size:58.33}, t2:{cx:467.4,y:269.1,size:41.67}};
+  t1:{cx:467.2,y:165.6,size:58.33,maxW:56}, t2:{cx:467.4,y:269.1,size:41.67,maxW:40,step:98}};
 function hcShadow(on,k){ if(on){ ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowOffsetX=-2*k; ctx.shadowOffsetY=3.46*k; ctx.shadowBlur=3*k; } else { ctx.shadowColor='transparent'; ctx.shadowBlur=ctx.shadowOffsetX=ctx.shadowOffsetY=0; } }
 function wrapLines(text,size,maxW){ font('TabletBody',size); const lines=[]; for(const para of String(text||'').split('\n')){ let cur='';
     for(const w of para.split(/\s+/).filter(Boolean)){ const tst=cur?cur+' '+w:w; if(cur&&ctx.measureText(tst).width>maxW){ lines.push(cur); cur=w; } else cur=tst; }
@@ -760,11 +760,13 @@ function drawHeroCard(){
     for(const l of lines){ ctx.fillText(l,A.cx,y); y+=lead; } ctx.textAlign='left'; }
   /* toughness hearts */
   ctx.drawImage(IMG['hc/tough_'+m],0,0);
-  const t2=String(S.hcT2||'').trim();
-  if(t2) ctx.drawImage(IMG['hc/tough2'],0,0);
+  /* secondary toughness: one grey heart (with its arrow) per value, chained downwards */
+  const t2s=String(S.hcT2||'').split(/[\s,;\/]+/).filter(Boolean).slice(0,4);
+  t2s.forEach((v,i)=>ctx.drawImage(IMG['hc/tough2_icon'],427,193+i*HC.t2.step));
   ctx.fillStyle='#fff'; ctx.textAlign='center'; hcShadow(true,k);
-  const t1=String(S.hcT||'').trim(); if(t1){ ctx.font=`${HC.t1.size}px "TitlingGothic"`; ctx.fillText(t1,HC.t1.cx,HC.t1.y); }
-  if(t2){ ctx.font=`${HC.t2.size}px "TitlingGothic"`; ctx.fillText(t2,HC.t2.cx,HC.t2.y); }
+  const num=(v,sp,y)=>{ let sz=sp.size; ctx.font=`${sz}px "TitlingGothic"`; while(ctx.measureText(v).width>sp.maxW&&sz>14){ sz-=1; ctx.font=`${sz}px "TitlingGothic"`; } ctx.fillText(v,sp.cx,y-(sp.size-sz)*0.35); };
+  const t1=String(S.hcT||'').trim(); if(t1) num(t1,HC.t1,HC.t1.y);
+  t2s.forEach((v,i)=>num(v,HC.t2,HC.t2.y+i*HC.t2.step));
   hcShadow(false); ctx.textAlign='left';
   /* name plate (drop shadow 40 % at 45°, 9 px) and name, slightly rotated like in the PSD */
   ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowOffsetX=-6.36*k; ctx.shadowOffsetY=6.36*k; ctx.drawImage(IMG['hc/plate_'+m],0,0); ctx.restore();
